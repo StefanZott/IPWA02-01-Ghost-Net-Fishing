@@ -1,0 +1,20 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:17.6
+    container_name: postgres-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ghost_net_fishing
+      POSTGRES_USER: ghostnet
+      POSTGRES_PASSWORD: secret
+      TZ: Europe/Berlin
+    volumes:
+      - pg_ghostnet_data:/var/lib/postgresql/data
+      # Optional: place .sql files into ./initdb to auto-run once on first start
+      - ./initdb:/docker-entrypoint-initdb.d
+
+volumes:
+  pg_ghostnet_data:

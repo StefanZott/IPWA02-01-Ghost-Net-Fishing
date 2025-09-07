@@ -1,17 +1,44 @@
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f5faff;
-    color: #333;
-    margin: 2rem;
+html, body {
+    height: 100%;
+    margin: 0;
 }
 
-h1 {
-    color: #0066cc;
-    border-bottom: 2px solid #0066cc;
-    padding-bottom: 0.5rem;
+#app-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;   /* Sidebar | Map */
 }
 
-p {
-    font-size: 1.2rem;
-    margin-top: 1rem;
+/* Sidebar */
+#sidebar {
+    border-right: 1px solid #ddd;
+    background: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+    min-width: 280px;
+}
+
+.sidebar__header {
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fff;
+}
+.sidebar__list {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem;
+    overflow: auto;
+    flex: 1;
+}
+
+/* Map-Column */
+#map-container {
+    position: relative;
+    height: 100%;            /* wichtig: füllt die Grid-Zeile */
+}
+
+#map {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
 }
