@@ -36,7 +36,11 @@
                         Menü
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="menuDropdown">
-                        <li><a class="dropdown-item" href="#">Fake Link 1</a></li>
+                        <li class="nav-item">
+                            <a class="nav-link text-black" href="#" data-bs-toggle="modal" data-bs-target="#fakeModal1">
+                                Geister Netz hinzufügen
+                            </a>
+                        </li>
                         <li><a class="dropdown-item" href="#">Fake Link 2</a></li>
                         <li><a class="dropdown-item" href="#">Fake Link 3</a></li>
                     </ul>
@@ -45,6 +49,63 @@
         </div>
     </div>
 </nav>
+
+<!-- Modal -->
+<div class="modal fade" id="fakeModal1" tabindex="-1" aria-labelledby="fakeModal1Label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="fakeModal1Label">Geister Netz hinzufügen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text col-4" id="first-name">Vorname</span>
+                        <input type="text" class="form-control" aria-describedby="first-name">
+                    </div>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text col-4" id="last-name">Nachname</span>
+                        <input type="text" class="form-control" aria-describedby="last-name">
+                    </div>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text col-4" id="phone-number">Telefonnummer</span>
+                        <input type="text" class="form-control" aria-describedby=phone-number">
+                    </div>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text col-4" id="longitude">Längengrad</span>
+                        <input
+                                id="modal-lat"
+                                type="number"
+                                step="0.00001"
+                                min="-90"
+                                max="90"
+                                class="form-control"
+                                placeholder="z. B. 48.13743"
+                        />
+                    </div>
+                    <div class="input-group mb-3">
+                        <span class="input-group-text col-4" id="latitude">Breitengrad</span>
+                        <input
+                                id="modal-lng"
+                                type="number"
+                                step="0.00001"
+                                min="-180"
+                                max="180"
+                                class="form-control"
+                                placeholder="z. B. 11.57549"
+                        />
+                    </div>
+                    <div id="modal-map" class="mb-3" style="height: 420px; width: 100%;"></div>
+                    <div class="d-flex justify-content-around mb-3">
+                        <button type="submit" class="btn btn-success btn-lg">Speichern</button>
+                        <button type="submit" class="btn btn-danger btn-lg">Abbrechen</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- HAUPTBEREICH: Sidebar (links) + Karte (rechts) -->
 <div class="flex-grow-1 d-flex overflow-hidden">
@@ -93,7 +154,8 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js" defer></script>
 
 <!-- Projekt-Skripte (Reihenfolge wichtig: map.js vor sidebar.js) -->
-<script src="/js/map.js" defer></script>
-<script src="/js/sidebar.js" defer></script>
+<script type="module" src="/js/map.js"></script>
+<script type="module" src="/js/sidebar.js"></script>
+<script type="module" src="/js/modal-map.js"></script>
 </body>
 </html>
