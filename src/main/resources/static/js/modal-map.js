@@ -164,6 +164,31 @@ document.addEventListener("DOMContentLoaded", () => {
     latEl?.addEventListener("input", debounced);
     lngEl?.addEventListener("input", debounced);
   });
+
+  /** ========= Formular Handler ========= */
+  const form = document.getElementById("add-ghostnet-form");
+    if (form) {
+      form.addEventListener("submit", (ev) => {
+        ev.preventDefault(); // Seite nicht neu laden
+
+        const data = {
+          firstName: form.querySelector('[aria-describedby="first-name"]')?.value.trim(),
+          lastName: form.querySelector('[aria-describedby="last-name"]')?.value.trim(),
+          phone: form.querySelector('[aria-describedby="phone-number"]')?.value.trim(),
+          longitude: form.querySelector('[aria-describedby="longitude"]')?.value.trim(),
+          latitude: form.querySelector('[aria-describedby="latitude"]')?.value.trim(),
+        };
+
+        console.log("Formulardaten:", data);
+
+        // Hier kannst du die Daten an dein Backend schicken:
+        // fetch("/api/ghostnets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) })
+
+        // Modal schließen, wenn gewünscht:
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal?.hide();
+      });
+  }
 });
 
 /** ========= Utils ========= */
