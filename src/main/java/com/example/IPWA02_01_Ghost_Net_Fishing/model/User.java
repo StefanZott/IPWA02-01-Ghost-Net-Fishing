@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+
+import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -13,7 +15,7 @@ import java.util.Objects;
  * Abgebildet wird die Tabelle {@code person} aus schema.sql.
  */
 @Entity
-@Table(name = "person")
+@Table(name = "users")
 public class User {
 
     /** Primärschlüssel (wird durch SERIAL/IDENTITY in Postgres erzeugt). */
@@ -21,91 +23,44 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Name der Person (Pflichtfeld). */
-    @NotBlank
-    @Size(max = 255)
+    /** Eindeutiger Benutzername. */
+    @Column(nullable = false, unique = true)
+    private String username;
+
+    /** Eindeutige E-Mail-Adresse. */
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    /** BCrypt-Hash des Passworts (nie Klartext speichern!). */
+    @Column(name = "password_hash", nullable = false)
+    private String passwordHash;
+
+    /** Benutzerrolle. */
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String name;
+    private UserRole role = UserRole.REPORTER;
 
-    /**
-     * Telefonnummer der Person (optional).
-     * Darf leer sein, wenn eine Person anonym meldet.
-     */
-    @Size(max = 50)
-    @Pattern(regexp = "^[0-9+\\-()\\s]*$", message = "Ungültiges Telefonformat")
-    private String phone;
+    /** Anlagezeitpunkt. */
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt = Instant.now();
 
-    /**
-     * Rolle der Person.
-     * Erlaubte Werte laut schema.sql: REPORTER oder SALVOR.
-     */
-    @NotBlank
-    @Column(nullable = false)
-    private String role;
+    // Getter/Setter ...
 
-    // --- Konstruktoren ---
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    protected User() {
-        // Für JPA
-    }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
 
-    public User(String name, String phone, String role) {
-        this.name = name;
-        this.phone = phone;
-        this.role = role;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    // --- Getter/Setter ---
+    public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 
-    public Long getId() {
-        return id;
-    }
+    public UserRole getRole() { return role; }
+    public void setRole(UserRole role) { this.role = role; }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    // --- equals/hashCode/toString ---
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof User user)) return false;
-        return Objects.equals(id, user.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
-    }
-
-    @Override
-    public String toString() {
-        return "Person{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", phone='" + phone + '\'' +
-                ", role='" + role + '\'' +
-                '}';
-    }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

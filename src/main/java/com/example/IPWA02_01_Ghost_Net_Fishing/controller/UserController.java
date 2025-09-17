@@ -1,6 +1,7 @@
 package com.example.IPWA02_01_Ghost_Net_Fishing.controller;
 
-import com.example.IPWA02_01_Ghost_Net_Fishing.model.RegisterRequest;
+import com.example.IPWA02_01_Ghost_Net_Fishing.dto.RegisterRequest;
+import com.example.IPWA02_01_Ghost_Net_Fishing.dto.RegisterResponse;
 import com.example.IPWA02_01_Ghost_Net_Fishing.model.User;
 import com.example.IPWA02_01_Ghost_Net_Fishing.service.UserService;
 import jakarta.validation.Valid;
@@ -36,16 +37,15 @@ public class UserController {
      * @return 200 + minimale Nutzerinfo (ohne Passwort), oder 400 bei Fehlern
      */
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody @Valid RegisterRequest req) {
-        try {
-            User saved = userService.register(req);
-            RegisterResponse resp = new RegisterResponse(
-                    saved.getId(), saved.getUsername(), saved.getEmail(), saved.getRole()
-            );
-            return ResponseEntity.ok(resp);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<RegisterResponse> register(@RequestBody RegisterRequest request) {
+        User user = userService.register(request);
+        RegisterResponse response = new RegisterResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getRole().name(),
+                "Registrierung erfolgreich"
+        );
+        return ResponseEntity.ok(response);
     }
 
 }

@@ -9,7 +9,7 @@ import jakarta.persistence.*;
  * Koordinaten werden als DOUBLE PRECISION gespeichert (entspricht deiner letzten erfolgreichen EMF-Initialisierung).
  */
 @Entity
-@Table(name = "ghost_net")
+@Table(name = "ghost_nets")
 public class GhostNet {
 
     /** Primärschlüssel. */

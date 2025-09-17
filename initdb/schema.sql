@@ -29,23 +29,20 @@ $$ LANGUAGE plpgsql;
 -- ---------------------------
 CREATE TABLE users (
   id              BIGSERIAL PRIMARY KEY,
-  -- Du kannst hier alternativ UUID verwenden:
-  -- id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-  email           VARCHAR(255) NOT NULL,
+  username        VARCHAR(100) NOT NULL UNIQUE,
+  email           VARCHAR(255) NOT NULL UNIQUE,
   password_hash   VARCHAR(255) NOT NULL,
+
   first_name      VARCHAR(100),
   last_name       VARCHAR(100),
   phone_number    VARCHAR(50),
 
-  -- aktiv / gesperrt etc.
+  role            VARCHAR(50) NOT NULL,
+
   enabled         BOOLEAN NOT NULL DEFAULT TRUE,
 
-  -- Audit
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT uq_users_email UNIQUE (email)
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Trigger für updated_at

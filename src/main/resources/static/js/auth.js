@@ -1,4 +1,3 @@
-<script>
 document.addEventListener("DOMContentLoaded", () => {
   const registerForm = document.getElementById("register-form");
 
@@ -21,13 +20,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const payload = {
       username,
       email,
-      password
+      password,
+      confirm,
+      role:     "REPORTER"
     };
 
     console.log("Registrierungsdaten:", payload);
 
     // Beispiel: An dein Spring Boot Backend senden
-    fetch("/api/register", {
+    fetch("/api/user/register", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -51,4 +52,3 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
-</script>

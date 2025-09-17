@@ -1,5 +1,6 @@
-package com.example.IPWA02_01_Ghost_Net_Fishing.model;
+package com.example.IPWA02_01_Ghost_Net_Fishing.dto;
 
+import com.example.IPWA02_01_Ghost_Net_Fishing.model.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -43,22 +44,4 @@ public class RegisterRequest {
 
     public UserRole getRole() { return role; }
     public void setRole(UserRole role) { this.role = role; }
-}
-
-/**
- * Minimale Antwort an den Client nach erfolgreicher Registrierung.
- */
-class RegisterResponse {
-    private Long id;
-    private String username;
-    private String email;
-    private UserRole role;
-
-    public RegisterResponse(Long id, String username, String email, UserRole role) {
-        this.id = id; this.username = username; this.email = email; this.role = role;
-    }
-    public Long getId() { return id; }
-    public String getUsername() { return username; }
-    public String getEmail() { return email; }
-    public UserRole getRole() { return role; }
 }
