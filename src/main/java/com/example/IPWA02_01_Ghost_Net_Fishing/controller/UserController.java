@@ -1,10 +1,13 @@
 package com.example.IPWA02_01_Ghost_Net_Fishing.controller;
 
+import com.example.IPWA02_01_Ghost_Net_Fishing.dto.LoginRequest;
+import com.example.IPWA02_01_Ghost_Net_Fishing.dto.LoginResponse;
 import com.example.IPWA02_01_Ghost_Net_Fishing.dto.RegisterRequest;
 import com.example.IPWA02_01_Ghost_Net_Fishing.dto.RegisterResponse;
 import com.example.IPWA02_01_Ghost_Net_Fishing.model.User;
 import com.example.IPWA02_01_Ghost_Net_Fishing.service.UserService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,6 +49,29 @@ public class UserController {
                 "Registrierung erfolgreich"
         );
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Login eines Benutzers.
+     * Prüft Benutzername/Passwort und liefert Erfolg/Fehler zurück.
+     */
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+        try {
+            User user = userService.login(request); // prüft Username + Passwort
+            if (user != null) {
+                // Erfolg: LoginResponse mit success=true
+                LoginResponse response = new LoginResponse(true, "Login erfolgreich", user.getUsername());
+                return ResponseEntity.ok(response);
+            } else {
+                // Fehler: falsche Daten
+                LoginResponse response = new LoginResponse(false, "Ungültiger Benutzername oder Passwort", null);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+        } catch (Exception e) {
+            LoginResponse response = new LoginResponse(false, "Fehler: " + e.getMessage(), null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 
 }

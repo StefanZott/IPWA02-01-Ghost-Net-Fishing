@@ -1,5 +1,6 @@
 package com.example.IPWA02_01_Ghost_Net_Fishing.service;
 
+import com.example.IPWA02_01_Ghost_Net_Fishing.dto.LoginRequest;
 import com.example.IPWA02_01_Ghost_Net_Fishing.dto.RegisterRequest;
 import com.example.IPWA02_01_Ghost_Net_Fishing.model.User;
 import com.example.IPWA02_01_Ghost_Net_Fishing.model.UserRole;
@@ -61,5 +62,16 @@ public class UserService {
             // Fallback, falls DB-Constraints anschlagen
             throw new IllegalArgumentException("Benutzername oder E-Mail existieren bereits.", ex);
         }
+    }
+
+    @Transactional
+    public User login(LoginRequest req) {
+        User user = userRepository.findByUsername(req.getUsername())
+                .orElse(null);
+
+        if (user != null && passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
+            return user;
+        }
+        return null; // Falsche Daten
     }
 }
