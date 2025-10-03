@@ -47,14 +47,19 @@
                 </li>
             </ul>
 
-            <!-- Login-Symbol (rechts) -->
+            <!-- Login-/User-Menü (rechts) -->
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link text-white" href="#" data-bs-toggle="modal" data-bs-target="#loginModal" title="Login">
+                <li class="nav-item dropdown" id="userMenu">
+                    <a class="nav-link text-white" href="#" id="loginMenuToggle" title="Login / Profil" aria-expanded="false">
                       <span id="login-border" class="d-inline-flex justify-content-center align-items-center border border-custom-red rounded-1 p-2">
                         <i id="login-logo" class="bi bi-person-fill fs-4 text-custom-red"></i>
                       </span>
                     </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="loginMenuToggle">
+                        <li><a class="dropdown-item" href="#" id="menuProfile">Profil</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" id="menuLogout">Logout</a></li>
+                    </ul>
                 </li>
             </ul>
         </div>
@@ -235,7 +240,9 @@
 <script type="module" src="/js/map.js"></script>
 <script type="module" src="/js/sidebar.js"></script>
 <script type="module" src="/js/modal-map.js"></script>
+<script type="module" src="/js/auth-store.js"></script>
 <script type="module" src="/js/auth.js"></script>
 <script type="module" src="/js/login.js"></script>
+<script type="module" src="/js/user-menu.js"></script>
 </body>
 </html>

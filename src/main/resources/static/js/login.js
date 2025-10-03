@@ -49,6 +49,15 @@ document.addEventListener("DOMContentLoaded", () => {
           closeModal("loginModal");
           form.reset();
         }, 60);
+
+        const profile = {
+                username: data.username,
+                displayName: data.displayName ?? data.username,
+                role: data.role,
+                id: data.userId
+        };
+        window.Auth.setUser(profile);     // <— global verfügbar
+        setTimeout(() => { closeModal("loginModal"); form.reset(); }, 60);
       }
     } catch (err) {
       console.error("[login.js] Login-Fehler:", err);

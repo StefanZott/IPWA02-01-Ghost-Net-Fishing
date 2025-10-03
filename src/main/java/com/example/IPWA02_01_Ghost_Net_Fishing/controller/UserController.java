@@ -61,15 +61,16 @@ public class UserController {
             User user = userService.login(request); // prüft Username + Passwort
             if (user != null) {
                 // Erfolg: LoginResponse mit success=true
-                LoginResponse response = new LoginResponse(true, "Login erfolgreich", user.getUsername());
+                LoginResponse response = new LoginResponse(true, "Login erfolgreich", user.getUsername(), user.getId(), user.getRole());
+
                 return ResponseEntity.ok(response);
             } else {
                 // Fehler: falsche Daten
-                LoginResponse response = new LoginResponse(false, "Ungültiger Benutzername oder Passwort", null);
+                LoginResponse response = new LoginResponse(false, "Ungültiger Benutzername oder Passwort", null, null, null);
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
             }
         } catch (Exception e) {
-            LoginResponse response = new LoginResponse(false, "Fehler: " + e.getMessage(), null);
+            LoginResponse response = new LoginResponse(false, "Fehler: " + e.getMessage(), null, null, null);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
