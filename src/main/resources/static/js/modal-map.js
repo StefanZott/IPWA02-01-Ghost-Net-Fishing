@@ -3,10 +3,12 @@
  * Interaktive Leaflet-Karte im Bootstrap-Modal #fakeModal1:
  * - Eingaben in lat/lng setzen Marker & zentrieren die Karte.
  * - Klick in die Karte schreibt lat/lng-Felder & versetzt den Marker.
+ * - Vorhandene GhostNets werden angezeigt (inkl. Overlap-Spread).
  *
  * Globale Referenzen:
- *   window.__ghostNetModalMap__   : Leaflet-Map (einmalig)
- *   window.__ghostNetModalMarker__: Leaflet-Marker (re-used)
+ *   window.__ghostNetModalMap__    : Leaflet-Map (einmalig)
+ *   window.__ghostNetModalMarker__ : Leaflet-Marker (re-used)
+ *   window.__ghostNetModalLayer__  : LayerGroup für vorhandene Netze
  *
  * Voraussetzungen:
  *   - Bootstrap 5 (Modal)
@@ -33,6 +35,9 @@ function createModalMap() {
     attribution: "&copy; OpenStreetMap-Mitwirkende"
   }).addTo(map);
 
+  // LayerGroup für vorhandene GhostNets
+  window.__ghostNetModalLayer__ = L.layerGroup().addTo(map);
+
   // Nach Rendern: Größe berechnen
   setTimeout(() => map.invalidateSize(), 0);
 
@@ -43,14 +48,14 @@ function createModalMap() {
     setMarker(map, lat, lng, { pan: true });
   });
 
-  // Optional: vorhandene Ghost Nets anzeigen (wie in map.js)
+  // Vorhandene Ghost Nets anzeigen (wie in map.js)
   loadGhostNetMarkers(map).catch((e) => console.warn("modal-map.js:", e));
 
   return map;
 }
 
 /**
- * Lädt Ghost-Net-Daten und setzt Marker + Bounds (optional).
+ * Lädt Ghost-Net-Daten und setzt Marker + (optional) Bounds.
  * @param {import('leaflet').Map} map
  * @returns {Promise<void>}
  */
@@ -59,16 +64,33 @@ async function loadGhostNetMarkers(map) {
     const res = await fetch("/api/ghostnets");
     if (!res.ok) return;
 
-    const nets = await res.json();
+    /** @type {Array<{id?:number|string, latitude:any, longitude:any, status?:string, size?:number, name?:string}>} */
+    const netsRaw = await res.json();
+
+    // Wichtig: Lat/Lng hart in Numbers umwandeln, sonst werden sie ggf. als Strings verworfen
+    const nets = netsRaw
+      .map(n => ({
+        ...n,
+        latitude: parseFloat(String(n.latitude)),
+        longitude: parseFloat(String(n.longitude))
+      }))
+      .filter(n => Number.isFinite(n.latitude) && Number.isFinite(n.longitude));
+
+    const layer = window.__ghostNetModalLayer__;
+    if (!layer) return;
+    layer.clearLayers();
+
     const bounds = [];
-    nets.forEach((n) => {
+    const spread = spreadOverlappingNets(nets, 5, 30);
+    spread.forEach((n) => {
       if (isNum(n.latitude) && isNum(n.longitude)) {
-        const m = L.marker([n.latitude, n.longitude]).addTo(map);
+        const m = L.marker([n.latitude, n.longitude]).addTo(layer);
         m.bindPopup(getPopupHtml(n));
         bounds.push([n.latitude, n.longitude]);
       }
     });
 
+    // Optionales Auto-Fit (im Modal oft nicht gewünscht, deshalb aus)
     // if (bounds.length) {
     //   map.fitBounds(bounds, { padding: [24, 24] });
     // }
@@ -154,7 +176,7 @@ function setFields(lat, lng) {
  * Bootstrap-Modal- und Formular-Initialisierung.
  * - Initialisiert/refresh’t die Leaflet-Karte beim Öffnen des Modals.
  * - Liest Koordinatenfelder live aus (debounced) und setzt Marker.
- * - Client-Side-Validation für Pflichtfelder (Lat/Lng).
+ * - Client-Side-Validation für Pflichtfelder (Lat/Lng) und POST an Backend.
  */
 document.addEventListener("DOMContentLoaded", async () => {
   /** @type {HTMLElement|null} */
@@ -192,7 +214,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // ======= Client-Side-Validation für #add-ghostnet-form =======
+  // ======= Client-Side-Validation + POST für #add-ghostnet-form =======
   /** @type {HTMLFormElement|null} */
   const form = document.getElementById("add-ghostnet-form");
   if (!form) return;
@@ -233,7 +255,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     lngInput.reportValidity();
   });
 
-  // Submit-Handler: prüft Form-Gültigkeit und markiert mit 'was-validated'
+  // Submit-Handler: prüft Form-Gültigkeit, sendet POST und feuert Event
   form.addEventListener("submit", async (event) => {
     // Pflichtfelder prüfen (inkl. Range)
     validateRange(latInput, -90, 90);
@@ -247,7 +269,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // <-- ab hier: eigenen Submit übernehmen
-    event.preventDefault();                      // WICHTIG: Default-Submit verhindern
+    event.preventDefault();
 
     // Werte robust lesen/normalisieren
     const phoneEl = /** @type {HTMLInputElement} */(document.getElementById("phone-number"));
@@ -264,6 +286,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (phone) payload.phone = phone;
 
     try {
+      // Passe ggf. den Endpoint an: /api/ghostnets ODER /api/ghostnets/add
       const res = await fetch("/api/ghostnets/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -271,7 +294,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       if (!res.ok) {
-        // Optional: Fehlermeldung für den/die Nutzer:in
         console.error("POST /api/ghostnets fehlgeschlagen:", res.status, await res.text());
         alert("Speichern fehlgeschlagen. Bitte später erneut versuchen.");
         return;
@@ -285,14 +307,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       const modal = bootstrap.Modal.getInstance(document.getElementById("fakeModal1"));
       modal?.hide();
 
-      // Karte/Liste neu laden (einfachste Variante: Seite neu, oder gezielt refreshen)
-      // a) Seite neu laden:
-      // location.reload();
-
-      // b) gezielt: Marker & Sidebar neu laden (falls du Funktionen exportierst)
-      // -> hier minimalistisch: Marker aus map.js neu durchladen:
-      // (z.B. eigenes Custom-Event abfeuern, das map.js/sidebar.js abonniert)
+      // Sidebar + Hauptkarte aktualisieren
       document.dispatchEvent(new CustomEvent("ghostnet:created"));
+
+      // Auch die Marker im Modal neu laden (damit neue Einträge sichtbar sind)
+      if (window.__ghostNetModalMap__) {
+        await loadGhostNetMarkers(window.__ghostNetModalMap__);
+      }
     } catch (e) {
       console.error("Netzwerkfehler beim Speichern:", e);
       alert("Netzwerkfehler beim Speichern.");
@@ -357,12 +378,12 @@ function esc(s) {
 
 /**
  * Popup-HTML für vorhandene Ghost Nets.
- * @param {{id:number, name?:string, status?:string, size?:number, latitude?:number, longitude?:number}} net
+ * @param {{id?:number|string, name?:string, status?:string, size?:number, latitude?:number, longitude?:number}} net
  * @returns {string}
  */
 function getPopupHtml(net) {
-  const name = esc(net.name ?? `#${net.id}`);
-  const status = esc(net.status ?? "unbekannt");
+  const name = esc(net.name ?? `#${net.id ?? "?"}`);
+  const status = esc(net.status ?? "REPORTED");
   const size = typeof net.size === "number" ? `Größe: ${net.size}` : "";
   const lat = isNum(net.latitude) ? net.latitude.toFixed(5) : "-";
   const lng = isNum(net.longitude) ? net.longitude.toFixed(5) : "-";
@@ -374,4 +395,64 @@ function getPopupHtml(net) {
       <div>Koord.: ${lat}, ${lng}</div>
     </div>
   `;
+}
+
+/**
+ * Verhindert überlappende Marker, indem Gruppen gleicher Koordinaten minimal
+ * versetzt (im Kreis) dargestellt werden.
+ *
+ * WICHTIG: Diese Version coerc’t latitude/longitude in Numbers, damit
+ * auch String-Werte vom Backend nicht „durchfallen“.
+ *
+ * @param {Array<{latitude:any, longitude:any, [k:string]:any}>} nets
+ * @param {number} [precision=5] Dezimalstellen zur Gruppierung
+ * @param {number} [radiusM=30]  Radius in Metern für die Verteilung
+ * @returns {Array<{latitude:number, longitude:number, [k:string]:any, __spreadMeta?:{index:number,total:number}}>}
+ */
+function spreadOverlappingNets(nets, precision = 5, radiusM = 30) {
+  // 1° Breite ≈ 111_320 m; 1° Länge ≈ 111_320 * cos(lat)
+  const degLat = (m) => m / 111320;
+
+  /** @type {Map<string, Array<any>>} */
+  const groups = new Map();
+
+  for (const raw of nets) {
+    const latNum = parseFloat(String(raw.latitude));
+    const lngNum = parseFloat(String(raw.longitude));
+    if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) continue;
+
+    const item = { ...raw, latitude: latNum, longitude: lngNum };
+    const key = `${latNum.toFixed(precision)}|${lngNum.toFixed(precision)}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  }
+
+  /** @type {Array<any>} */
+  const out = [];
+
+  for (const [, group] of groups) {
+    if (group.length === 1) {
+      out.push({ ...group[0], __spreadMeta: { index: 0, total: 1 } });
+      continue;
+    }
+
+    const total = group.length;
+    group.forEach((n, i) => {
+      const angle = (2 * Math.PI * i) / total; // gleichmäßig im Kreis
+      const latRad = (n.latitude * Math.PI) / 180;
+      const degLng = (m) => m / (111320 * Math.cos(latRad));
+
+      const dLat = degLat(radiusM) * Math.sin(angle);
+      const dLng = degLng(radiusM) * Math.cos(angle);
+
+      out.push({
+        ...n,
+        latitude: n.latitude + dLat,
+        longitude: n.longitude + dLng,
+        __spreadMeta: { index: i, total }
+      });
+    });
+  }
+
+  return out;
 }
