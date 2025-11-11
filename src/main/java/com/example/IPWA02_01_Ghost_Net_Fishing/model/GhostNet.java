@@ -5,8 +5,7 @@ import jakarta.persistence.*;
 /**
  * Repräsentiert ein Geisternetz (Ghost Net).
  * <p>
- * Diese Version richtet sich strikt nach schema.sql (ohne Spalte "size").
- * Koordinaten werden als DOUBLE PRECISION gespeichert (entspricht deiner letzten erfolgreichen EMF-Initialisierung).
+ * Koordinaten werden als DOUBLE PRECISION gespeichert.
  */
 @Entity
 @Table(name = "ghost_nets")
@@ -17,6 +16,10 @@ public class GhostNet {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Geschätzte Größe (z. B. Fläche/Volumen), kann null sein. */
+    @Column(name = "size")
+    private Double size;
+
     /** Breitengrad (DOUBLE PRECISION). */
     @Column(name = "latitude", nullable = false, columnDefinition = "DOUBLE PRECISION")
     private Double latitude;
@@ -26,12 +29,20 @@ public class GhostNet {
     private Double longitude;
 
     /**
-     * Status des Netzes (FOUND, CONFIRMED, RECOVERED,…).
-     * Wird als String in der Spalte {@code status} gespeichert.
+     * Meldende Person (User). Darf null sein, wenn anonyme Meldungen erlaubt sind.
+     * <p>
+     * DB-Spalte: ghost_nets.reported_by_user_id (FK auf users.id)
+     */
+    @ManyToOne(optional = true) // auf false stellen, wenn Reporter Pflicht ist
+    @JoinColumn(name = "reported_by_user_id", nullable = true)
+    private User reportedBy;
+
+    /**
+     * Status des Geisternetzes (als String in der DB gespeichert).
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 50)
-    private GhostNetStatus status;
+    @Column(name = "status", nullable = false)
+    private GhostNetStatus status = GhostNetStatus.REPORTED;
 
     // --- Getter/Setter ---
 
@@ -50,8 +61,18 @@ public class GhostNet {
     /** @param longitude Längengrad */
     public void setLongitude(Double longitude) { this.longitude = longitude; }
 
+    /** @return Größe */
+    public Double getSize() { return size; }
+    /** @param size Größe */
+    public void setSize(Double size) { this.size = size; }
+
     /** @return Status */
     public GhostNetStatus getStatus() { return status; }
     /** @param status Status */
     public void setStatus(GhostNetStatus status) { this.status = status; }
+
+    /** @return meldende Person (User) oder null (anonym) */
+    public User getReportedBy() { return reportedBy; }
+    /** @param reportedBy meldende Person (User) oder null (anonym) */
+    public void setReportedBy(User reportedBy) { this.reportedBy = reportedBy; }
 }

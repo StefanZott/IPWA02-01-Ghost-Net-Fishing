@@ -94,4 +94,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initialzustand setzen
   updateToggleState(window.Auth?.isAuthenticated?.() ? window.Auth.isAuthenticated() : false);
+
+  const isAuth = window.Auth?.isAuthenticated?.() && window.Auth.isAuthenticated();
+    const logo = document.getElementById("login-logo");
+    const border = document.getElementById("login-border");
+
+    if (!logo || !border) return;
+
+    // Vorherige Farbklassen entfernen
+    [logo, border].forEach(el => {
+      el.classList.remove("border-custom-green","text-custom-green","border-custom-red","text-custom-red");
+    });
+
+    if (isAuth) {
+      // User ist eingeloggt → grün
+      logo.classList.add("text-custom-green");
+      border.classList.add("border-custom-green");
+    } else {
+      // Kein User → rot
+      logo.classList.add("text-custom-red");
+      border.classList.add("border-custom-red");
+    }
 });

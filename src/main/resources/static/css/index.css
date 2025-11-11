@@ -15,3 +15,22 @@
 .text-custom-red {
     color: #ff0000 !important;
 }
+
+#btn-add-ghostnet {
+  border-radius: 0;
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+}
+
+#btn-add-ghostnet:hover {
+  background-color: #5c636a; /* etwas dunklerer Ton von bg-secondary */
+  transform: translateY(-1px);
+}
+
+.form-label small {
+  color: #adb5bd; /* helles Grau, dezentes optional */
+  font-weight: normal;
+  font-size: 0.875rem;
+}
+
+/* optional: etwas weniger Platz unter Fehlermeldungen */
+.was-validated .invalid-feedback { margin-top: 0.25rem; }

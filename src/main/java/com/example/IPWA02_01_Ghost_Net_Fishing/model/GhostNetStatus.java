@@ -1,10 +1,11 @@
 package com.example.IPWA02_01_Ghost_Net_Fishing.model;
 
 /**
- * Mögliche Stati eines Ghost Nets.
+ * Erlaubte Statuswerte gem. DB-Constraint.
  */
 public enum GhostNetStatus {
-    FOUND,
-    CONFIRMED,
-    RECOVERED
+    REPORTED,      // Gemeldet
+    SCHEDULED,     // Bergung bevorstehend
+    RECOVERED,     // Geborgen
+    CANCELLED      // Verschollen/abgebrochen
 }

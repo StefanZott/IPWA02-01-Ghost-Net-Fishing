@@ -53,9 +53,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       });
       // Falls wir Marker haben → auf Bounds zoomen
-      if (bounds.length) {
-        map.fitBounds(bounds, { padding: [24, 24] });
-      }
+      // if (bounds.length) {
+      //   map.fitBounds(bounds, { padding: [24, 24] });
+      // }
     } else {
       console.warn("map.js: /api/ghostnets HTTP", res.status);
     }
