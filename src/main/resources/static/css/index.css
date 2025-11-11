@@ -34,3 +34,38 @@
 
 /* optional: etwas weniger Platz unter Fehlermeldungen */
 .was-validated .invalid-feedback { margin-top: 0.25rem; }
+
+/* --- Ghost-Nets Sidebar Cards --- */
+.gn-card {
+  border: 1px solid #dee2e6;
+  border-radius: .5rem;
+  padding: .6rem .75rem;
+  background: #fff;
+  box-shadow: 0 1px 1px rgba(0,0,0,.04);
+  margin-bottom: .5rem;
+  transition: border-color .15s ease, box-shadow .15s ease, transform .05s ease;
+}
+.gn-card:hover,
+.gn-card:focus-within {
+  border-color: #0d6efd;
+  box-shadow: 0 2px 8px rgba(13,110,253,.12);
+  cursor: pointer;
+}
+.gn-row1 {
+  font-weight: 600;
+  line-height: 1.25;
+}
+.gn-row2 {
+  color: #6c757d;
+  font-size: .92rem;
+  line-height: 1.25;
+  margin-top: .25rem;
+}
+
+/* optionale Status-Farben (Text) */
+.gn-status { font-weight: 600; }
+.gn-status--REPORTED  { color: #dc3545; }   /* rot */
+.gn-status--SCHEDULED { color: #ffc107; }   /* gelb */
+.gn-status--RECOVERED { color: #198754; }   /* grün */
+.gn-status--CONFIRMED { color: #0d6efd; }   /* blau */
+.gn-status--CANCELLED { color: #6c757d; }   /* grau */

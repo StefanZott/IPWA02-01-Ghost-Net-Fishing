@@ -234,16 +234,69 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // Submit-Handler: prüft Form-Gültigkeit und markiert mit 'was-validated'
-  form.addEventListener("submit", (event) => {
-    // zuerst die Pflichtfelder gegenprüfen (inkl. Range)
+  form.addEventListener("submit", async (event) => {
+    // Pflichtfelder prüfen (inkl. Range)
     validateRange(latInput, -90, 90);
     validateRange(lngInput, -180, 180);
 
     if (!form.checkValidity()) {
       event.preventDefault();
       event.stopPropagation();
+      form.classList.add("was-validated");
+      return;
     }
-    form.classList.add("was-validated");
+
+    // <-- ab hier: eigenen Submit übernehmen
+    event.preventDefault();                      // WICHTIG: Default-Submit verhindern
+
+    // Werte robust lesen/normalisieren
+    const phoneEl = /** @type {HTMLInputElement} */(document.getElementById("phone-number"));
+    const sizeEl  = /** @type {HTMLInputElement} */(document.getElementById("size-ghost-net"));
+
+    const latitude  = Number(String(latInput.value).replace(",", "."));
+    const longitude = Number(String(lngInput.value).replace(",", "."));
+    const size      = sizeEl?.value ? Number(String(sizeEl.value).replace(",", ".")) : null;
+    const phone     = phoneEl?.value?.trim() || null;
+
+    /** @type {{latitude:number, longitude:number, size?:number|null, phone?:string|null}} */
+    const payload = { latitude, longitude };
+    if (size !== null && Number.isFinite(size)) payload.size = size;
+    if (phone) payload.phone = phone;
+
+    try {
+      const res = await fetch("/api/ghostnets/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        // Optional: Fehlermeldung für den/die Nutzer:in
+        console.error("POST /api/ghostnets fehlgeschlagen:", res.status, await res.text());
+        alert("Speichern fehlgeschlagen. Bitte später erneut versuchen.");
+        return;
+      }
+
+      // Erfolg: Modal schließen, Liste/Karte aktualisieren
+      form.reset();
+      form.classList.remove("was-validated");
+
+      // Modal schließen (Bootstrap 5)
+      const modal = bootstrap.Modal.getInstance(document.getElementById("fakeModal1"));
+      modal?.hide();
+
+      // Karte/Liste neu laden (einfachste Variante: Seite neu, oder gezielt refreshen)
+      // a) Seite neu laden:
+      // location.reload();
+
+      // b) gezielt: Marker & Sidebar neu laden (falls du Funktionen exportierst)
+      // -> hier minimalistisch: Marker aus map.js neu durchladen:
+      // (z.B. eigenes Custom-Event abfeuern, das map.js/sidebar.js abonniert)
+      document.dispatchEvent(new CustomEvent("ghostnet:created"));
+    } catch (e) {
+      console.error("Netzwerkfehler beim Speichern:", e);
+      alert("Netzwerkfehler beim Speichern.");
+    }
   });
 
   // Komfort: Beim Öffnen des Modals Reset der Validierungszustände.
