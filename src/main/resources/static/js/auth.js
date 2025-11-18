@@ -21,8 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
       username,
       email,
       password,
-      confirm,
-      role:     "REPORTER"
+      confirm
     };
 
     console.log("Registrierungsdaten:", payload);

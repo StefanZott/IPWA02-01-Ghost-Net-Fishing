@@ -45,7 +45,7 @@ public class UserController {
         RegisterResponse response = new RegisterResponse(
                 user.getId(),
                 user.getUsername(),
-                user.getRole().name(),
+                user.getRole(),
                 "Registrierung erfolgreich"
         );
         return ResponseEntity.ok(response);

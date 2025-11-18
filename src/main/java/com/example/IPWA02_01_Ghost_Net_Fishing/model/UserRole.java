@@ -6,6 +6,6 @@ package com.example.IPWA02_01_Ghost_Net_Fishing.model;
  * SALVOR    = bergende Person
  */
 public enum UserRole {
-    REPORTER,
-    SALVOR
+    REPORTER,   // Melder
+    SALVOR      // Berger
 }

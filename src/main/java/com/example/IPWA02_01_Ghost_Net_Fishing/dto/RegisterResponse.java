@@ -1,5 +1,7 @@
 package com.example.IPWA02_01_Ghost_Net_Fishing.dto;
 
+import com.example.IPWA02_01_Ghost_Net_Fishing.model.UserRole;
+
 /**
  * Antwort-Objekt für eine erfolgreiche Benutzerregistrierung.
  * Enthält Informationen, die nach der Registrierung an den Client
@@ -9,10 +11,10 @@ public class RegisterResponse {
 
     private Long userId;
     private String username;
-    private String role;
+    private UserRole role;
     private String message;
 
-    public RegisterResponse(Long userId, String username, String role, String message) {
+    public RegisterResponse(Long userId, String username, UserRole role, String message) {
         this.userId = userId;
         this.username = username;
         this.role = role;
@@ -27,7 +29,7 @@ public class RegisterResponse {
         return username;
     }
 
-    public String getRole() {
+    public UserRole getRole() {
         return role;
     }
 

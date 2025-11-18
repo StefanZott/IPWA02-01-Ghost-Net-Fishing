@@ -27,7 +27,7 @@ public class RegisterRequest {
     private String confirm;
 
     /** Optional: Rolle (Standard REPORTER). */
-    private UserRole role = UserRole.REPORTER;
+    private UserRole role = UserRole.SALVOR;
 
     // Getter/Setter ...
     public String getUsername() { return username; }
