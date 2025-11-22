@@ -58,6 +58,8 @@
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="loginMenuToggle">
                         <li><a class="dropdown-item" href="#" id="menuProfile">Profil</a></li>
                         <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" id="menuProfileSheduled">Bergung ankündigen</a></li>
+                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="#" id="menuLogout">Logout</a></li>
                     </ul>
                 </li>
@@ -129,6 +131,50 @@
                     <button type="submit" class="btn btn-success w-100">Registrieren</button>
                 </form>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="profileModalLabel">Benutzerprofil</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <ul class="list-group">
+
+                    <li class="list-group-item d-flex justify-content-between">
+                        <strong>Benutzername:</strong>
+                        <span id="p-username"></span>
+                    </li>
+
+                    <li class="list-group-item d-flex justify-content-between">
+                        <strong>Anzeigename:</strong>
+                        <span id="p-displayName"></span>
+                    </li>
+
+                    <li class="list-group-item d-flex justify-content-between">
+                        <strong>Rolle:</strong>
+                        <span id="p-role"></span>
+                    </li>
+
+                    <li class="list-group-item d-flex justify-content-between">
+                        <strong>User-ID:</strong>
+                        <span id="p-id"></span>
+                    </li>
+
+                </ul>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+            </div>
+
         </div>
     </div>
 </div>

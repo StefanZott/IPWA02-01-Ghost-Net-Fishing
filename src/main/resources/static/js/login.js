@@ -54,7 +54,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 username: data.username,
                 displayName: data.displayName ?? data.username,
                 role: data.role,
-                id: data.userId
+                id: data.userId,
+                email: data.email,
+                createdAt: data.createdAt
         };
         window.Auth.setUser(profile);     // <— global verfügbar
         setTimeout(() => { closeModal("loginModal"); form.reset(); }, 60);

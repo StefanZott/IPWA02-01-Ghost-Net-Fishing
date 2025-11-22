@@ -2,6 +2,8 @@ package com.example.IPWA02_01_Ghost_Net_Fishing.dto;
 
 import com.example.IPWA02_01_Ghost_Net_Fishing.model.UserRole;
 
+import java.time.Instant;
+
 public class LoginResponse {
 
     private boolean success;
@@ -9,13 +11,17 @@ public class LoginResponse {
     private String username;
     private UserRole role;
     private String message;
+    private String email;
+    private Instant createdAt;
 
-    public LoginResponse(boolean success, String message, String username, Long userId, UserRole role) {
+    public LoginResponse(boolean success, String message, String username, Long userId, UserRole role, String email, Instant createdAt) {
         this.success = success;
         this.message = message;
         this.username = username;
         this.role = role;
         this.userId = userId;
+        this.email = email;
+        this.createdAt = createdAt;
     }
 
     public String getUsername() {
@@ -56,5 +62,21 @@ public class LoginResponse {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 }
