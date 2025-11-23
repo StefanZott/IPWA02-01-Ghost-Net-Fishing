@@ -11,7 +11,7 @@
 
 /**
  * Liest den aktuellen Benutzer aus window.Auth bzw. sessionStorage.
- * @returns {{username?:string, displayName?:string, role?:string, id?:number}|null}
+ * @returns {{username?:string, displayName?:string, role?:string, id?:number, email?:string, createdAt?:string}|null}
  */
 function getCurrentUser() {
   // Bevorzugt: Auth-Store
@@ -32,6 +32,102 @@ function getCurrentUser() {
 }
 
 /**
+ * Setzt die farbige Darstellung der Rolle.
+ * REPORTER  → blau
+ * RECOVERER → grün
+ * andere    → grau
+ *
+ * @param {HTMLElement|null} el - DOM-Element für die Rollenanzeige
+ * @param {string} role - Rollen-String (z. B. "REPORTER")
+ */
+function applyRoleStyle(el, role) {
+  if (!el) return;
+
+  // Text setzen
+  el.textContent = role || "-";
+
+  // Alle Badge-/Farbklassen entfernen
+  el.classList.remove("badge", "text-bg-primary", "text-bg-success", "text-bg-secondary");
+
+  // Immer Badge als Basis
+  el.classList.add("badge");
+
+  const upper = String(role || "").toUpperCase();
+
+  if (upper === "REPORTER") {
+    el.classList.add("text-bg-primary");
+  } else if (upper === "RECOVERER") {
+    el.classList.add("text-bg-success");
+  } else {
+    el.classList.add("text-bg-secondary");
+  }
+}
+
+/**
+ * Lädt die Geisternetze des aktuellen Users und zeigt sie im Profil-Modal an.
+ * Erwartet ein Container-Element mit id="p-my-nets" im DOM.
+ *
+ * @param {{id?:number, username?:string}} user - aktueller User
+ * @returns {Promise<void>}
+ */
+async function loadMyGhostNets(user) {
+  const container = document.getElementById("p-my-nets");
+  if (!container) return; // Falls das UI-Element (noch) nicht existiert
+
+  container.innerHTML = `<span class="text-muted small">Lade Geisternetze …</span>`;
+
+  try {
+    const res = await fetch("/api/ghostnets");
+    if (!res.ok) {
+      container.innerHTML = `<span class="text-danger small">Fehler beim Laden der Geisternetze.</span>`;
+      return;
+    }
+
+    const nets = await res.json();
+
+    // 🔎 Filterlogik an dein Backend anpassen:
+    // hier mehrere Varianten, je nach DTO-Struktur.
+    const myNets = nets.filter(net =>
+      net.reporterId === user.id ||
+      (net.reporter && net.reporter.id === user.id) ||
+      net.reporterName === user.username
+    );
+
+    if (!myNets.length) {
+      container.innerHTML = `<span class="text-muted small">Du hast bisher keine Geisternetze gemeldet.</span>`;
+      return;
+    }
+
+    const list = document.createElement("ul");
+    list.className = "list-group list-group-flush";
+
+    myNets.forEach((net) => {
+      const li = document.createElement("li");
+      li.className = "list-group-item py-1 small";
+
+      const id  = net.id ?? "?";
+      const st  = net.status ?? "UNBEKANNT";
+      const lat = (typeof net.latitude === "number")  ? net.latitude.toFixed(5)  : "-";
+      const lng = (typeof net.longitude === "number") ? net.longitude.toFixed(5) : "-";
+
+      li.innerHTML = `
+        <div><strong>#${id}</strong> – Status: ${st}</div>
+        <div class="text-muted">Koord.: ${lat}, ${lng}</div>
+      `;
+
+      list.appendChild(li);
+    });
+
+    container.innerHTML = "";
+    container.appendChild(list);
+
+  } catch (e) {
+    console.error("user-menu.js: Fehler beim Laden der Geisternetze:", e);
+    container.innerHTML = `<span class="text-danger small">Fehler beim Laden der Geisternetze.</span>`;
+  }
+}
+
+/**
  * Öffnet das Profil-Modal und befüllt die Felder mit User-Daten.
  */
 function openProfileModal() {
@@ -47,7 +143,6 @@ function openProfileModal() {
     return;
   }
 
-  // Helper zum Setzen von Textinhalten
   /**
    * Setzt den Text eines Elements, falls vorhanden.
    * @param {string} id
@@ -58,19 +153,37 @@ function openProfileModal() {
     if (el) el.textContent = value ?? "-";
   }
 
-  const username = user.username ?? "-";
+  const username    = user.username ?? "-";
   const displayName = user.displayName || username || "-";
-  const role = user.role ?? "-";
-  const id = (user.id !== undefined && user.id !== null) ? String(user.id) : "-";
+  const email       = user.email ?? "-";
+  const role        = user.role ?? "-";
+
+  // createdAt schön formatieren
+  let createdAt = "-";
+  if (user.createdAt) {
+    try {
+      createdAt = new Date(user.createdAt).toLocaleString("de-DE");
+    } catch {
+      createdAt = user.createdAt;
+    }
+  }
 
   setText("p-username", username);
   setText("p-displayName", displayName);
-  setText("p-role", role);
-  setText("p-id", id);
+  setText("p-email", email);
 
-  // Modal anzeigen
+  // Rolle farbig darstellen
+  const roleEl = document.getElementById("p-role");
+  applyRoleStyle(roleEl, role);
+
+  setText("p-createdAt", createdAt);
+
+  // Eigene Geisternetze laden (falls entsprechender Container existiert)
+  loadMyGhostNets(user).catch(() => { /* Fehler werden in der Funktion geloggt */ });
+
   bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
+
 
 /**
  * Initialisiert das User-Menü-Verhalten nach DOM-Aufbau.

@@ -136,6 +136,7 @@
 </div>
 
 <!-- PROFILE MODAL -->
+<!-- PROFILE MODAL -->
 <div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -148,27 +149,80 @@
             <div class="modal-body">
                 <ul class="list-group">
 
-                    <li class="list-group-item d-flex justify-content-between">
-                        <strong>Benutzername:</strong>
-                        <span id="p-username"></span>
+                    <li class="list-group-item d-flex align-items-center justify-content-between">
+                        <div>
+                            <strong>Benutzername:</strong>
+                            <span id="p-username" class="ms-1"></span>
+                        </div>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                title="Benutzername bearbeiten"
+                                data-profile-edit="username">
+                            <i class="bi bi-pencil"></i>
+                        </button>
                     </li>
 
-                    <li class="list-group-item d-flex justify-content-between">
-                        <strong>Anzeigename:</strong>
-                        <span id="p-displayName"></span>
+                    <li class="list-group-item d-flex align-items-center justify-content-between">
+                        <div>
+                            <strong>Anzeigename:</strong>
+                            <span id="p-displayName" class="ms-1"></span>
+                        </div>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                title="Anzeigename bearbeiten"
+                                data-profile-edit="displayName">
+                            <i class="bi bi-pencil"></i>
+                        </button>
                     </li>
 
-                    <li class="list-group-item d-flex justify-content-between">
-                        <strong>Rolle:</strong>
-                        <span id="p-role"></span>
+                    <li class="list-group-item d-flex align-items-center justify-content-between">
+                        <div>
+                            <strong>E-Mail:</strong>
+                            <span id="p-email" class="ms-1"></span>
+                        </div>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                title="E-Mail bearbeiten"
+                                data-profile-edit="email">
+                            <i class="bi bi-pencil"></i>
+                        </button>
                     </li>
 
-                    <li class="list-group-item d-flex justify-content-between">
-                        <strong>User-ID:</strong>
-                        <span id="p-id"></span>
+                    <li class="list-group-item d-flex align-items-center justify-content-between">
+                        <div>
+                            <strong>Rolle:</strong>
+                            <span id="p-role" class="ms-1"></span>
+                        </div>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                title="Rolle bearbeiten"
+                                data-profile-edit="role">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </li>
+
+                    <li class="list-group-item d-flex align-items-center justify-content-between">
+                        <div>
+                            <strong>Erstellt am:</strong>
+                            <span id="p-createdAt" class="ms-1"></span>
+                        </div>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                title="Erstell-Datum bearbeiten"
+                                data-profile-edit="createdAt">
+                            <i class="bi bi-pencil"></i>
+                        </button>
                     </li>
 
                 </ul>
+
+                <!-- Meine gemeldeten Geisternetze -->
+                <div class="mt-3">
+                    <h6>Meine gemeldeten Geisternetze</h6>
+                    <div id="p-my-nets" class="small text-muted">
+                        Noch keine Daten geladen.
+                    </div>
+                </div>
             </div>
 
             <div class="modal-footer">

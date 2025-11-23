@@ -29,13 +29,12 @@ public class GhostNet {
     private Double longitude;
 
     /**
-     * Meldende Person (User). Darf null sein, wenn anonyme Meldungen erlaubt sind.
+     * Meldende Person als reine FK-ID (users.id).
      * <p>
-     * DB-Spalte: ghost_nets.reported_by_user_id (FK auf users.id)
+     * Darf null sein, wenn anonyme Meldungen erlaubt sind.
      */
-    @ManyToOne(optional = true) // auf false stellen, wenn Reporter Pflicht ist
-    @JoinColumn(name = "reported_by_user_id", nullable = true)
-    private User reportedBy;
+    @Column(name = "reported_by_user_id", nullable = true)
+    private Long reportedBy;
 
     /**
      * Status des Geisternetzes (als String in der DB gespeichert).
@@ -47,32 +46,62 @@ public class GhostNet {
     // --- Getter/Setter ---
 
     /** @return DB-Primärschlüssel */
-    public Long getId() { return id; }
+    public Long getId() {
+        return id;
+    }
+
     /** @param id DB-Primärschlüssel */
-    public void setId(Long id) { this.id = id; }
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    /** @return geschätzte Größe */
+    public Double getSize() {
+        return size;
+    }
+
+    /** @param size geschätzte Größe */
+    public void setSize(Double size) {
+        this.size = size;
+    }
 
     /** @return Breitengrad */
-    public Double getLatitude() { return latitude; }
+    public Double getLatitude() {
+        return latitude;
+    }
+
     /** @param latitude Breitengrad */
-    public void setLatitude(Double latitude) { this.latitude = latitude; }
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
 
     /** @return Längengrad */
-    public Double getLongitude() { return longitude; }
-    /** @param longitude Längengrad */
-    public void setLongitude(Double longitude) { this.longitude = longitude; }
+    public Double getLongitude() {
+        return longitude;
+    }
 
-    /** @return Größe */
-    public Double getSize() { return size; }
-    /** @param size Größe */
-    public void setSize(Double size) { this.size = size; }
+    /** @param longitude Längengrad */
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+
+    /** @return meldende Person (User-ID) oder null (anonym) */
+    public Long getReportedBy() {
+        return reportedBy;
+    }
+
+    /** @param reportedBy meldende Person (User-ID) oder null (anonym) */
+    public void setReportedBy(Long reportedBy) {
+        this.reportedBy = reportedBy;
+    }
 
     /** @return Status */
-    public GhostNetStatus getStatus() { return status; }
-    /** @param status Status */
-    public void setStatus(GhostNetStatus status) { this.status = status; }
+    public GhostNetStatus getStatus() {
+        return status;
+    }
 
-    /** @return meldende Person (User) oder null (anonym) */
-    public User getReportedBy() { return reportedBy; }
-    /** @param reportedBy meldende Person (User) oder null (anonym) */
-    public void setReportedBy(User reportedBy) { this.reportedBy = reportedBy; }
+    /** @param status Status */
+    public void setStatus(GhostNetStatus status) {
+        this.status = status;
+    }
 }

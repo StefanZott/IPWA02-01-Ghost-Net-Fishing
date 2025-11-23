@@ -4,6 +4,7 @@
  * - Eingaben in lat/lng setzen Marker & zentrieren die Karte.
  * - Klick in die Karte schreibt lat/lng-Felder & versetzt den Marker.
  * - Vorhandene GhostNets werden angezeigt (inkl. Overlap-Spread).
+ * - Beim Anlegen eines neuen GhostNets wird – falls vorhanden – die User-ID mitgeschickt.
  *
  * Globale Referenzen:
  *   window.__ghostNetModalMap__    : Leaflet-Map (einmalig)
@@ -280,8 +281,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     const size      = sizeEl?.value ? Number(String(sizeEl.value).replace(",", ".")) : null;
     const phone     = phoneEl?.value?.trim() || null;
 
-    /** @type {{latitude:number, longitude:number, size?:number|null, phone?:string|null}} */
-    const payload = { latitude, longitude };
+    // User-ID ermitteln (Auth-Store oder sessionStorage)
+    const currentUserId = getCurrentUserId();
+
+    /**
+     * Payload für das Backend.
+     * WICHTIG: Falls dein Backend einen anderen Feldnamen erwartet
+     * (z.B. "userId" statt "reportedByUserId"), hier anpassen.
+     *
+     * reportedByUserId wird IMMER mitgeschickt (number oder null).
+     */
+    /** @type {{latitude:number, longitude:number, size?:number|null, phone?:string|null, reportedByUserId:number|null}} */
+    const payload = {
+      latitude,
+      longitude,
+    };
+
     if (size !== null && Number.isFinite(size)) payload.size = size;
     if (phone) payload.phone = phone;
 
@@ -289,7 +304,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Passe ggf. den Endpoint an: /api/ghostnets ODER /api/ghostnets/add
       const res = await fetch("/api/ghostnets/add", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+            "Content-Type": "application/json",
+            "X-User-Id": currentUserId ?? null
+        },
         body: JSON.stringify(payload),
       });
 
@@ -359,6 +377,44 @@ function debounce(fn, wait) {
     clearTimeout(t);
     t = setTimeout(() => fn(...args), wait);
   };
+}
+
+/**
+ * Liefert die aktuelle User-ID aus globalem Auth-Store oder sessionStorage.
+ * Falls kein User gefunden wird oder keine ID vorhanden ist, wird null zurückgegeben.
+ *
+ * Erwartete Strukturen:
+ *  - window.Auth.getUser() → { id: number | string, ... }
+ *  - sessionStorage["user"] → JSON-Objekt mit Feld "id"
+ *
+ * @returns {number|null} User-ID oder null (anonyme Meldung)
+ */
+function getCurrentUserId() {
+  try {
+    // 1) Bevorzugt: globaler Auth-Store (auth-store.js)
+    if (window.Auth && typeof window.Auth.getUser === "function") {
+      const u = window.Auth.getUser();
+      if (u && u.id !== undefined && u.id !== null) {
+        const idNum = Number(u.id);
+        if (Number.isFinite(idNum)) return idNum;
+      }
+    }
+
+    // 2) Fallback: direkt aus sessionStorage lesen
+    const raw = sessionStorage.getItem("user");
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.id !== undefined && parsed.id !== null) {
+      const idNum = Number(parsed.id);
+      if (Number.isFinite(idNum)) return idNum;
+    }
+  } catch (err) {
+    console.warn("[modal-map.js] getCurrentUserId(): Fehler beim Lesen des Users:", err);
+  }
+
+  // 3) Kein User → anonym
+  return null;
 }
 
 /**

@@ -95,7 +95,7 @@ public class GhostNetService {
             // ghostNet.setReportedBy(user);
 
             // --- VARIANTE B: Nur FK-ID (Long) in der Entity vorhanden ---
-            // ghostNet.setReportedByUserId(currentUserId);
+            ghostNet.setReportedBy(currentUserId);
         }
 
         // 4) Persistieren
