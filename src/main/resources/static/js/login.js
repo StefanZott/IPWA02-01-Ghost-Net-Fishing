@@ -56,6 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 role: data.role,
                 id: data.userId,
                 email: data.email,
+                phoneNumber: data.phoneNumber,
                 createdAt: data.createdAt
         };
         window.Auth.setUser(profile);     // <— global verfügbar

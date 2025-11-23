@@ -11,7 +11,15 @@
 
 /**
  * Liest den aktuellen Benutzer aus window.Auth bzw. sessionStorage.
- * @returns {{username?:string, displayName?:string, role?:string, id?:number, email?:string, createdAt?:string}|null}
+ * @returns {{
+ *   username?:string,
+ *   displayName?:string,
+ *   role?:string,
+ *   id?:number,
+ *   email?:string,
+ *   phoneNumber?:string|null,
+ *   createdAt?:string
+ * }|null}
  */
 function getCurrentUser() {
   // Bevorzugt: Auth-Store
@@ -33,12 +41,12 @@ function getCurrentUser() {
 
 /**
  * Setzt die farbige Darstellung der Rolle.
- * REPORTER  → blau
- * RECOVERER → grün
- * andere    → grau
+ * REPORTER            → blau
+ * RECOVERER / SALVOR  → grün
+ * andere              → grau
  *
  * @param {HTMLElement|null} el - DOM-Element für die Rollenanzeige
- * @param {string} role - Rollen-String (z. B. "REPORTER")
+ * @param {string} role - Rollen-String (z. B. "REPORTER", "SALVOR")
  */
 function applyRoleStyle(el, role) {
   if (!el) return;
@@ -56,7 +64,8 @@ function applyRoleStyle(el, role) {
 
   if (upper === "REPORTER") {
     el.classList.add("text-bg-primary");
-  } else if (upper === "RECOVERER") {
+  } else if (upper === "RECOVERER" || upper === "SALVOR") {
+    // SALVOR = bergende Person → grün
     el.classList.add("text-bg-success");
   } else {
     el.classList.add("text-bg-secondary");
@@ -85,13 +94,14 @@ async function loadMyGhostNets(user) {
 
     const nets = await res.json();
 
-    // 🔎 Filterlogik an dein Backend anpassen:
-    // hier mehrere Varianten, je nach DTO-Struktur.
-    const myNets = nets.filter(net =>
-      net.reporterId === user.id ||
-      (net.reporter && net.reporter.id === user.id) ||
-      net.reporterName === user.username
-    );
+    // 🔧 WICHTIG:
+    // Dein Backend liefert GhostNet-Entities mit Feld "reportedBy" (FK auf users.id)
+    // → Wir filtern daher ausschließlich auf reportedBy === user.id
+    const myNets = nets.filter((net) => {
+      if (net.reportedBy == null || user.id == null) return false;
+      // tolerant bei Typen (String/Number)
+      return Number(net.reportedBy) === Number(user.id);
+    });
 
     if (!myNets.length) {
       container.innerHTML = `<span class="text-muted small">Du hast bisher keine Geisternetze gemeldet.</span>`;
@@ -157,6 +167,7 @@ function openProfileModal() {
   const displayName = user.displayName || username || "-";
   const email       = user.email ?? "-";
   const role        = user.role ?? "-";
+  const phone       = user.phoneNumber ?? "-";
 
   // createdAt schön formatieren
   let createdAt = "-";
@@ -171,6 +182,7 @@ function openProfileModal() {
   setText("p-username", username);
   setText("p-displayName", displayName);
   setText("p-email", email);
+  setText("p-phoneNumber", phone);
 
   // Rolle farbig darstellen
   const roleEl = document.getElementById("p-role");
@@ -293,4 +305,12 @@ document.addEventListener("DOMContentLoaded", () => {
     logo.classList.add("text-custom-red");
     border.classList.add("border-custom-red");
   }
+
+  // Edit-Buttons (Stift-Icon) – aktuell noch Stub
+  document.querySelectorAll("[data-profile-edit]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const field = btn.getAttribute("data-profile-edit");
+      alert(`Bearbeiten von "${field}" ist noch nicht implementiert.`);
+    });
+  });
 });

@@ -12,15 +12,17 @@ public class LoginResponse {
     private UserRole role;
     private String message;
     private String email;
+    private String phoneNumber;
     private Instant createdAt;
 
-    public LoginResponse(boolean success, String message, String username, Long userId, UserRole role, String email, Instant createdAt) {
+    public LoginResponse(boolean success, String message, String username, Long userId, UserRole role, String email, String phoneNumber, Instant createdAt) {
         this.success = success;
         this.message = message;
         this.username = username;
         this.role = role;
         this.userId = userId;
         this.email = email;
+        this.phoneNumber = phoneNumber;
         this.createdAt = createdAt;
     }
 
@@ -78,5 +80,13 @@ public class LoginResponse {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 }
