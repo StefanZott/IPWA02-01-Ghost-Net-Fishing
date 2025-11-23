@@ -1,9 +1,6 @@
 package com.example.IPWA02_01_Ghost_Net_Fishing.controller;
 
-import com.example.IPWA02_01_Ghost_Net_Fishing.dto.LoginRequest;
-import com.example.IPWA02_01_Ghost_Net_Fishing.dto.LoginResponse;
-import com.example.IPWA02_01_Ghost_Net_Fishing.dto.RegisterRequest;
-import com.example.IPWA02_01_Ghost_Net_Fishing.dto.RegisterResponse;
+import com.example.IPWA02_01_Ghost_Net_Fishing.dto.*;
 import com.example.IPWA02_01_Ghost_Net_Fishing.model.User;
 import com.example.IPWA02_01_Ghost_Net_Fishing.service.UserService;
 import jakarta.validation.Valid;
@@ -75,4 +72,20 @@ public class UserController {
         }
     }
 
+    /**
+     * Aktualisiert die Profildaten (E-Mail, Telefonnummer) eines Benutzers.
+     * Aktuell noch ohne Security-Check (darf sich später nur selbst ändern).
+     *
+     * @param id      ID des zu ändernden Benutzers
+     * @param request Payload mit neuen Werten
+     * @return der aktualisierte User (als JSON)
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(
+            @PathVariable Long id,
+            @RequestBody UpdateUserRequest request
+    ) {
+        User updated = userService.updateUser(id, request.getEmail(), request.getPhoneNumber());
+        return ResponseEntity.ok(updated);
+    }
 }

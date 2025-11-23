@@ -10,31 +10,79 @@
  */
 
 /**
- * Liest den aktuellen Benutzer aus window.Auth bzw. sessionStorage.
+ * Liest den aktuellen Benutzer ausschließlich aus window.Auth.
  * @returns {{
- *   username?:string,
- *   displayName?:string,
- *   role?:string,
- *   id?:number,
- *   email?:string,
- *   phoneNumber?:string|null,
- *   createdAt?:string
- * }|null}
+ *   id?: number,
+ *   username?: string,
+ *   role?: string,
+ *   email?: string,
+ *   phoneNumber?: string | null,
+ *   createdAt?: string
+ * } | null}
  */
 function getCurrentUser() {
-  // Bevorzugt: Auth-Store
   if (window.Auth?.getUser) {
-    const u = window.Auth.getUser();
-    if (u) return u;
+    try {
+      const u = window.Auth.getUser();
+      if (u) return u;
+    } catch (e) {
+      console.warn("user-menu.js: Fehler beim Lesen von window.Auth.getUser():", e);
+    }
+  }
+  return null;
+}
+
+/**
+ * Aktualisiert den Benutzer lokal im Auth-Store.
+ * KEIN eigener sessionStorage-Eintrag "user" mehr!
+ *
+ * @param {object} user - Benutzerobjekt (vom Backend)
+ */
+function persistUser(user) {
+  if (window.Auth?.updateUser) {
+    try { window.Auth.updateUser(user); } catch (e) {
+      console.warn("user-menu.js: Fehler bei Auth.updateUser:", e);
+    }
+  } else if (window.Auth?.setUser) {
+    try { window.Auth.setUser(user); } catch (e) {
+      console.warn("user-menu.js: Fehler bei Auth.setUser:", e);
+    }
+  }
+}
+
+/**
+ * Aktualisiert die E-Mail / Telefonnummer eines Users im Backend.
+ *
+ * @param {{id?:number, email?:string, phoneNumber?:string|null}} user
+ * @returns {Promise<object|null>} aktualisierter User oder null bei Fehler
+ */
+async function updateUserOnServer(user) {
+  if (!user.id) {
+    alert("Benutzer-ID fehlt. Profil kann nicht aktualisiert werden.");
+    return null;
   }
 
-  // Fallback: sessionStorage-Objekt "user"
   try {
-    const raw = sessionStorage.getItem("user");
-    if (!raw) return null;
-    return JSON.parse(raw);
+    const res = await fetch(`/api/user/${user.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: user.email ?? null,
+        phoneNumber: user.phoneNumber ?? null
+      })
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.error("updateUserOnServer: Fehlerantwort:", res.status, text);
+      alert("Fehler beim Speichern der Profildaten im Backend.");
+      return null;
+    }
+
+    return await res.json();
   } catch (e) {
-    console.warn("user-menu.js: Konnte sessionStorage.user nicht lesen/parsen:", e);
+    console.error("updateUserOnServer: Netzwerk-/Serverfehler:", e);
+    alert("Verbindungsfehler beim Aktualisieren des Profils.");
     return null;
   }
 }
@@ -51,13 +99,9 @@ function getCurrentUser() {
 function applyRoleStyle(el, role) {
   if (!el) return;
 
-  // Text setzen
   el.textContent = role || "-";
 
-  // Alle Badge-/Farbklassen entfernen
   el.classList.remove("badge", "text-bg-primary", "text-bg-success", "text-bg-secondary");
-
-  // Immer Badge als Basis
   el.classList.add("badge");
 
   const upper = String(role || "").toUpperCase();
@@ -65,7 +109,6 @@ function applyRoleStyle(el, role) {
   if (upper === "REPORTER") {
     el.classList.add("text-bg-primary");
   } else if (upper === "RECOVERER" || upper === "SALVOR") {
-    // SALVOR = bergende Person → grün
     el.classList.add("text-bg-success");
   } else {
     el.classList.add("text-bg-secondary");
@@ -74,14 +117,13 @@ function applyRoleStyle(el, role) {
 
 /**
  * Lädt die Geisternetze des aktuellen Users und zeigt sie im Profil-Modal an.
- * Erwartet ein Container-Element mit id="p-my-nets" im DOM.
  *
- * @param {{id?:number, username?:string}} user - aktueller User
+ * @param {{id?:number}} user - aktueller User
  * @returns {Promise<void>}
  */
 async function loadMyGhostNets(user) {
   const container = document.getElementById("p-my-nets");
-  if (!container) return; // Falls das UI-Element (noch) nicht existiert
+  if (!container) return;
 
   container.innerHTML = `<span class="text-muted small">Lade Geisternetze …</span>`;
 
@@ -94,12 +136,8 @@ async function loadMyGhostNets(user) {
 
     const nets = await res.json();
 
-    // 🔧 WICHTIG:
-    // Dein Backend liefert GhostNet-Entities mit Feld "reportedBy" (FK auf users.id)
-    // → Wir filtern daher ausschließlich auf reportedBy === user.id
     const myNets = nets.filter((net) => {
       if (net.reportedBy == null || user.id == null) return false;
-      // tolerant bei Typen (String/Number)
       return Number(net.reportedBy) === Number(user.id);
     });
 
@@ -153,23 +191,16 @@ function openProfileModal() {
     return;
   }
 
-  /**
-   * Setzt den Text eines Elements, falls vorhanden.
-   * @param {string} id
-   * @param {string} value
-   */
   function setText(id, value) {
     const el = document.getElementById(id);
     if (el) el.textContent = value ?? "-";
   }
 
-  const username    = user.username ?? "-";
-  const displayName = user.displayName || username || "-";
-  const email       = user.email ?? "-";
-  const role        = user.role ?? "-";
-  const phone       = user.phoneNumber ?? "-";
+  const username = user.username ?? "-";
+  const email    = user.email ?? "-";
+  const role     = user.role ?? "-";
+  const phone    = user.phoneNumber ?? "-";
 
-  // createdAt schön formatieren
   let createdAt = "-";
   if (user.createdAt) {
     try {
@@ -180,22 +211,88 @@ function openProfileModal() {
   }
 
   setText("p-username", username);
-  setText("p-displayName", displayName);
   setText("p-email", email);
   setText("p-phoneNumber", phone);
 
-  // Rolle farbig darstellen
   const roleEl = document.getElementById("p-role");
   applyRoleStyle(roleEl, role);
 
   setText("p-createdAt", createdAt);
 
-  // Eigene Geisternetze laden (falls entsprechender Container existiert)
-  loadMyGhostNets(user).catch(() => { /* Fehler werden in der Funktion geloggt */ });
-
+  loadMyGhostNets(user).catch(() => {});
   bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
 
+/**
+ * Handhabt den Klick auf einen Edit-Button im Profil-Modal.
+ * Nur email und phoneNumber sind editierbar.
+ *
+ * @param {string|null} field - Feldname aus data-profile-edit
+ */
+async function handleProfileEdit(field) {
+  if (!field) return;
+
+  const user = getCurrentUser();
+  if (!user) {
+    alert("Kein Benutzer angemeldet.");
+    return;
+  }
+
+  const EDITABLE = {
+    email:       { label: "E-Mail",       type: "email" },
+    phoneNumber: { label: "Telefonnummer", type: "tel" }
+  };
+
+  if (!Object.prototype.hasOwnProperty.call(EDITABLE, field)) {
+    alert("Dieses Feld kann nicht bearbeitet werden.");
+    return;
+  }
+
+  const cfg = EDITABLE[field];
+  const currentValue = (user[field] ?? "") || "";
+
+  const input = window.prompt(`Neuen ${cfg.label} eingeben:`, currentValue);
+  if (input === null) {
+    return;
+  }
+
+  const value = input.trim();
+
+  if (cfg.type === "email") {
+    if (value && !value.includes("@")) {
+      alert("Bitte eine gültige E-Mail-Adresse eingeben.");
+      return;
+    }
+  }
+
+  if (cfg.type === "tel") {
+    if (value && value.length < 3) {
+      alert("Bitte eine gültige Telefonnummer eingeben.");
+      return;
+    }
+  }
+
+  if (value === currentValue.trim()) {
+    return;
+  }
+
+  const updatedDraft = {
+    ...user,
+    [field]: value || null
+  };
+
+  // Backend-Update
+  const updatedFromServer = await updateUserOnServer(updatedDraft);
+  if (!updatedFromServer) {
+    return;
+  }
+
+  // Nur Auth-Store aktualisieren, kein eigener sessionStorage-Eintrag
+  persistUser(updatedFromServer);
+
+  // UI neu befüllen
+  openProfileModal();
+}
 
 /**
  * Initialisiert das User-Menü-Verhalten nach DOM-Aufbau.
@@ -208,81 +305,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!toggleEl || !dropdownEl) return;
 
-  /** Bootstrap Dropdown-Instanz lazy erzeugen */
   const getDropdown = () => bootstrap.Dropdown.getOrCreateInstance(toggleEl);
 
-  /**
-   * Öffnet das Login-Modal robust.
-   */
   function openLoginModal() {
     const modalEl = document.getElementById("loginModal");
     if (!modalEl) return;
     bootstrap.Modal.getOrCreateInstance(modalEl).show();
   }
 
-  /**
-   * Aktualisiert die UI-Zustände (z. B. Tooltip/Title) bei Auth-Änderungen.
-   * @param {boolean} isAuth
-   */
   function updateToggleState(isAuth) {
     toggleEl.setAttribute("title", isAuth ? "Profil / Logout" : "Login");
-    // Optional: Icon-Farbe neutralisieren bei Logout
     if (!isAuth) {
       const logo = document.getElementById("login-logo");
       const border = document.getElementById("login-border");
       [logo, border].forEach(el => {
         el?.classList?.remove("border-custom-green","text-custom-green","border-custom-red","text-custom-red");
-        // Standard (rot) wie initial:
         el?.classList?.add("border-custom-red","text-custom-red");
       });
     }
   }
 
-  // Primärer Klick-Handler auf das Icon
   toggleEl.addEventListener("click", (ev) => {
     ev.preventDefault();
     const isAuth = !!window.Auth?.isAuthenticated?.() && window.Auth.isAuthenticated();
     if (isAuth) {
-      // Eingeloggt → Dropdown anzeigen/umschalten
       getDropdown().toggle();
     } else {
-      // Nicht eingeloggt → Login-Modal öffnen
       openLoginModal();
     }
   });
 
-  // Menü-Items
   const profileItem = document.getElementById("menuProfile");
   const logoutItem  = document.getElementById("menuLogout");
 
-  /**
-   * Profil anzeigen: Dropdown schließen und Profil-Modal öffnen.
-   */
   profileItem?.addEventListener("click", (e) => {
     e.preventDefault();
     getDropdown().hide();
     openProfileModal();
   });
 
-  /**
-   * Logout: Auth-Store leeren + optional Backend informieren.
-   */
   logoutItem?.addEventListener("click", async (e) => {
     e.preventDefault();
     getDropdown().hide();
     try {
-      // Optional: Server-Logout (falls Endpoint vorhanden)
-      // await fetch("/api/user/logout", { method: "POST" });
+      // optional: await fetch("/api/user/logout", { method: "POST" });
     } catch {}
     window.Auth?.logout?.();
   });
 
-  /** Auf Auth-Events reagieren (Login/Update/Logout) */
   window.Auth?.addEventListener?.("auth:login",  () => updateToggleState(true));
   window.Auth?.addEventListener?.("auth:update", () => updateToggleState(true));
   window.Auth?.addEventListener?.("auth:logout", () => updateToggleState(false));
 
-  // Initialzustand setzen
   updateToggleState(window.Auth?.isAuthenticated?.() ? window.Auth.isAuthenticated() : false);
 
   const isAuth = window.Auth?.isAuthenticated?.() && window.Auth.isAuthenticated();
@@ -291,26 +365,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!logo || !border) return;
 
-  // Vorherige Farbklassen entfernen
   [logo, border].forEach(el => {
     el.classList.remove("border-custom-green","text-custom-green","border-custom-red","text-custom-red");
   });
 
   if (isAuth) {
-    // User ist eingeloggt → grün
     logo.classList.add("text-custom-green");
     border.classList.add("border-custom-green");
   } else {
-    // Kein User → rot
     logo.classList.add("text-custom-red");
     border.classList.add("border-custom-red");
   }
 
-  // Edit-Buttons (Stift-Icon) – aktuell noch Stub
+  // Edit-Buttons (Stift-Icon) mit Logik verbinden
   document.querySelectorAll("[data-profile-edit]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const field = btn.getAttribute("data-profile-edit");
-      alert(`Bearbeiten von "${field}" ist noch nicht implementiert.`);
+      handleProfileEdit(field);
     });
   });
 });

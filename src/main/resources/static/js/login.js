@@ -52,7 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const profile = {
                 username: data.username,
-                displayName: data.displayName ?? data.username,
                 role: data.role,
                 id: data.userId,
                 email: data.email,
