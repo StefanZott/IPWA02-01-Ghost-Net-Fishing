@@ -1,11 +1,17 @@
 package com.example.IPWA02_01_Ghost_Net_Fishing.service;
 
 import com.example.IPWA02_01_Ghost_Net_Fishing.dto.GhostNetRequest;
+import com.example.IPWA02_01_Ghost_Net_Fishing.dto.GhostNetResponse;
+import com.example.IPWA02_01_Ghost_Net_Fishing.dto.UpdateGhostNetStatusRequest;
 import com.example.IPWA02_01_Ghost_Net_Fishing.model.GhostNet;
 import com.example.IPWA02_01_Ghost_Net_Fishing.model.GhostNetStatus;
 import com.example.IPWA02_01_Ghost_Net_Fishing.repository.GhostNetRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -131,5 +137,25 @@ public class GhostNetService {
                     "Feld '" + field + "' außerhalb des erlaubten Bereichs [" + minIncl + ", " + maxIncl + "]: " + value
             );
         }
+    }
+
+    /**
+     * Aktualisiert nur den Status eines vorhandenen Geisternetzes.
+     *
+     * @param id        ID des Geisternetzes
+     * @param newStatus Neuer Status
+     * @return aktualisiertes Geisternetz
+     * @throws IllegalArgumentException wenn das Geisternetz nicht gefunden wird
+     */
+    public GhostNet updateStatus(Long id, GhostNetStatus newStatus) {
+        if (newStatus == null) {
+            throw new IllegalArgumentException("Neuer Status darf nicht null sein.");
+        }
+
+        GhostNet net = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("GhostNet nicht gefunden: " + id));
+
+        net.setStatus(newStatus);
+        return repository.save(net);
     }
 }

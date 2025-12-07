@@ -2,6 +2,7 @@ package com.example.IPWA02_01_Ghost_Net_Fishing.controller;
 
 import com.example.IPWA02_01_Ghost_Net_Fishing.dto.GhostNetRequest;
 import com.example.IPWA02_01_Ghost_Net_Fishing.dto.GhostNetResponse;
+import com.example.IPWA02_01_Ghost_Net_Fishing.dto.UpdateGhostNetStatusRequest;
 import com.example.IPWA02_01_Ghost_Net_Fishing.model.GhostNet;
 import com.example.IPWA02_01_Ghost_Net_Fishing.service.GhostNetService;
 import org.springframework.http.ResponseEntity;
@@ -63,6 +64,31 @@ public class GhostNetController {
                 ghostNet.getLongitude(),
                 ghostNet.getSize(),
                 ghostNet.getStatus()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Aktualisiert den Status eines vorhandenen Geisternetzes.
+     *
+     * @param id      ID des Geisternetzes
+     * @param request Request mit neuem Status
+     * @return aktualisierte GhostNetResponse
+     */
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<GhostNetResponse> updateStatus(
+            @PathVariable Long id,
+            @RequestBody UpdateGhostNetStatusRequest request) {
+
+        GhostNet updated = service.updateStatus(id, request.getStatus());
+
+        GhostNetResponse response = new GhostNetResponse(
+                updated.getId(),
+                updated.getLatitude(),
+                updated.getLongitude(),
+                updated.getSize(),
+                updated.getStatus()
         );
 
         return ResponseEntity.ok(response);

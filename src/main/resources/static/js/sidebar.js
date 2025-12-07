@@ -153,6 +153,10 @@ document.addEventListener("DOMContentLoaded", () => {
    */
   async function reloadSidebar() {
     allNets = await fetchGhostNets();
+
+    // LISTE NACH ID SORTIEREN (aufsteigend)
+    allNets.sort((a, b) => Number(a.id) - Number(b.id));
+
     const filtered = applyFilter(allNets, currentQuery);
     render(filtered);
   }

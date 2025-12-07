@@ -11,6 +11,53 @@
  *   window.__ghostNetLayer__ : LayerGroup mit allen Markern
  */
 
+/**
+ * Gemeinsame Icon-Definition für farbige Marker
+ * (Form wie das Leaflet-Standard-Icon, nur andere Farbe).
+ * Quelle: https://github.com/pointhi/leaflet-color-markers
+ */
+const __markerShadowUrl =
+  "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png";
+const __markerBaseUrl =
+  "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/";
+
+/**
+ * Erzeugt ein farbiges Marker-Icon auf Basis der Standard-Leaflet-Form.
+ *
+ * @param {string} fileName Dateiname, z. B. "marker-icon-blue.png"
+ * @returns {import('leaflet').Icon}
+ */
+function createColoredIcon(fileName) {
+  return L.icon({
+    iconUrl: __markerBaseUrl + fileName,
+    shadowUrl: __markerShadowUrl,
+    iconSize:     [25, 41],
+    iconAnchor:   [12, 41],
+    popupAnchor:  [1, -34],
+    tooltipAnchor:[16, -28],
+    shadowSize:   [41, 41],
+  });
+}
+
+/** Status → Icon-Mapping */
+const STATUS_ICONS = {
+  REPORTED:  createColoredIcon("marker-icon-blue.png"),   // Blau
+  SCHEDULED: createColoredIcon("marker-icon-gold.png"),   // Gelb
+  RECOVERED: createColoredIcon("marker-icon-green.png"),  // Grün
+  CANCELLED: createColoredIcon("marker-icon-red.png"),    // Rot
+};
+
+/**
+ * Liefert ein passendes Icon für den Status.
+ *
+ * @param {string} status
+ * @returns {import('leaflet').Icon}
+ */
+function getStatusIcon(status) {
+  const key = String(status || "").toUpperCase();
+  return STATUS_ICONS[key] || STATUS_ICONS.REPORTED;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   const mapEl = document.getElementById("map");
   if (!mapEl) {
@@ -41,7 +88,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 /**
  * Lädt GhostNets vom Backend und rendert sie auf der Karte.
- * @param {import('leaflet').Map} map
+ *
+ * @param {import('leaflet').Map} map Leaflet-Karte
+ * @returns {Promise<void>}
  */
 async function loadAndRenderGhostNets(map) {
   try {
@@ -55,9 +104,29 @@ async function loadAndRenderGhostNets(map) {
 }
 
 /**
- * Entfernt alle alten Marker und zeichnet neue.
+ * Erzeugt einen Leaflet-Marker (klassische Pin-Form) mit Icon je Status
+ * und fügt ihn einem Layer hinzu.
+ *
+ * @param {import('leaflet').LayerGroup} layer Ziel-LayerGroup für den Marker
+ * @param {{id?:number|string, latitude:number, longitude:number, status?:string, size?:number}} net Geisternetz-DTO
+ * @returns {import('leaflet').Marker} Erzeugter Marker
+ */
+function createGhostNetMarker(layer, net) {
+  const marker = L.marker(
+    [net.latitude, net.longitude],
+    { icon: getStatusIcon(net.status) }
+  );
+  marker.bindPopup(getPopupHtml(net));
+  marker.addTo(layer);
+  return marker;
+}
+
+/**
+ * Entfernt alle alten Marker und zeichnet neue Marker in Standard-Pin-Form
+ * mit farbigem Icon je Status.
  * Nutzt spreadOverlappingNets(), um überlappende Marker zu vermeiden.
- * @param {import('leaflet').Map} map
+ *
+ * @param {import('leaflet').Map} map Leaflet-Karte
  * @param {Array<{id?:number|string, latitude:number, longitude:number, status?:string, size?:number}>} nets
  */
 function renderGhostNetMarkers(map, nets) {
@@ -69,16 +138,13 @@ function renderGhostNetMarkers(map, nets) {
 
   for (const n of spreadNets) {
     if (!Number.isFinite(n.latitude) || !Number.isFinite(n.longitude)) continue;
-
-    const popupHtml = getPopupHtml(n);
-    const marker = L.marker([n.latitude, n.longitude]);
-    marker.bindPopup(popupHtml);
-    marker.addTo(layer);
+    createGhostNetMarker(layer, n);
   }
 }
 
 /**
  * Erstellt Popup-HTML für einen Marker.
+ *
  * @param {{id?:number|string, latitude:number, longitude:number, status?:string, size?:number}} net
  * @returns {string}
  */
@@ -103,9 +169,9 @@ function getPopupHtml(net) {
  * damit alle sichtbar bleiben. (Leaflet-Spreading ohne externe Lib.)
  *
  * @param {Array<{latitude:number, longitude:number, [k:string]:any}>} nets
- * @param {number} precision - Dezimalstellen zur Gruppierung (Standard 5)
- * @param {number} radiusM   - Radius in Metern für die Verteilung (Standard 30)
- * @returns {Array<{latitude:number, longitude:number, original:any, __spreadMeta?:{index:number,total:number}}>}
+ * @param {number} precision Dezimalstellen zur Gruppierung (Default 5)
+ * @param {number} radiusM   Radius in Metern für die Verteilung (Default 30)
+ * @returns {Array<{latitude:number, longitude:number, original?:any, __spreadMeta?:{index:number,total:number}}>}}
  */
 function spreadOverlappingNets(nets, precision = 5, radiusM = 30) {
   // 1° Breite ≈ 111_320 m; 1° Länge ≈ 111_320 * cos(lat)
@@ -137,7 +203,7 @@ function spreadOverlappingNets(nets, precision = 5, radiusM = 30) {
       const degLng = (m) => m / (111320 * Math.cos(latRad));
 
       const dLat = degLat(radiusM) * Math.sin(angle);
-      const dLng = degLng(radiusM) * Math.cos(angle);
+      const dLng = degLng(radiusM) * Math.cos(latRad) * Math.cos(angle);
 
       out.push({
         ...n,

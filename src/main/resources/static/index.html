@@ -58,7 +58,7 @@
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="loginMenuToggle">
                         <li><a class="dropdown-item" href="#" id="menuProfile">Profil</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" id="menuProfileSheduled">Bergung ankündigen</a></li>
+                        <li><a class="dropdown-item" href="#" id="menuProfileSheduled">Geisternetz bearbeiten</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="#" id="menuLogout">Logout</a></li>
                     </ul>
@@ -218,6 +218,99 @@
     </div>
 </div>
 
+<!-- Geisternetz editieren MODAL -->
+<div class="modal fade" id="editGhostNetModal" tabindex="-1"
+     aria-labelledby="editGhostNetModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="editGhostNetModalLabel">Geisternetz Status ändern</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                        aria-label="Schließen"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="row g-3">
+                    <!-- Linke Spalte: Liste aller Geisternetze -->
+                    <div class="col-12 col-lg-6">
+                        <p class="small text-muted mb-2">
+                            Wähle ein Geisternetz aus der Liste aus, um den Status zu ändern.
+                        </p>
+                        <div id="schedule-gn-list"
+                             class="border rounded p-2 overflow-auto"
+                             style="max-height: 340px;">
+                            <!-- Wird per JS befüllt -->
+                            <div class="text-muted small">
+                                Lade Geisternetze …
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rechte Spalte: Details + Status-Wechsel -->
+                    <div class="col-12 col-lg-6">
+                        <h6>Ausgewähltes Geisternetz</h6>
+                        <div id="schedule-selected-net"
+                             class="small text-muted mb-2">
+                            Noch kein Geisternetz ausgewählt.
+                        </div>
+
+                        <hr class="my-2"/>
+
+                        <form id="schedule-form" class="needs-validation" novalidate>
+                            <input type="hidden" id="schedule-net-id" />
+
+                            <div class="mb-3">
+                                <label for="schedule-status" class="form-label">
+                                    Neuer Status
+                                </label>
+                                <select id="schedule-status" class="form-select" required>
+                                    <option value="">Bitte wählen …</option>
+                                    <option value="SCHEDULED">Bergung bevorstehend</option>
+                                    <option value="RECOVERED">Geborgen</option>
+                                    <option value="CANCELLED">Verschollen / abgebrochen</option>
+                                </select>
+                                <div class="invalid-feedback">
+                                    Bitte einen Zielstatus auswählen.
+                                </div>
+                            </div>
+
+                            <div id="schedule-error"
+                                 class="d-none alert alert-danger py-2 small"
+                                 role="alert">
+                                <!-- Fehlermeldungen per JS -->
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button"
+                                        class="btn btn-outline-secondary"
+                                        data-bs-dismiss="modal">
+                                    Abbrechen
+                                </button>
+                                <button type="submit"
+                                        id="schedule-submit"
+                                        class="btn btn-primary"
+                                        disabled>
+                                    Status speichern
+                                </button>
+                            </div>
+                        </form>
+
+                        <p class="mt-3 mb-0 small text-muted">
+                            Hinweis: Die Status-Werte basieren auf der Aufgabenstellung
+                            (<strong>Gemeldet</strong>, <strong>Bergung bevorstehend</strong>,
+                            <strong>Geborgen</strong>, <strong>Verschollen</strong>), intern
+                            abgebildet als <code>REPORTED</code>, <code>SCHEDULED</code>,
+                            <code>RECOVERED</code> und <code>CANCELLED</code>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
 <!-- Modal -->
 <div class="modal fade" id="fakeModal1" tabindex="-1" aria-labelledby="fakeModal1Label" aria-hidden="true">
     <div class="modal-dialog">
@@ -350,19 +443,42 @@
 
     <!-- MAP-CONTAINER (rechts) – Karte in der Mitte, „boxed“ -->
     <main class="flex-grow-1 d-flex align-items-center justify-content-center overflow-hidden" aria-label="Karte">
-        <!--
-          Zentrierte, responsive Map-Box:
-          - rein inline per Style, keine projektinterne CSS-Datei
-          - passt sich an Viewport an, begrenzt auf sinnvolle Maxima
-        -->
-        <div id="map"
-             class="shadow-sm border rounded"
-             style="
-             width: min(100%, 1100px);
-             height: min(100%, 720px);
-             aspect-ratio: 16 / 10;
-             background:#fff;
-           ">
+        <div class="d-flex flex-column align-items-stretch"
+             style="width: min(100%, 1100px); height: min(100%, 720px);">
+            <div id="map"
+                 class="shadow-sm border rounded flex-grow-1"
+                 style="
+               width: 100%;
+               height: 100%;
+               aspect-ratio: 16 / 10;
+               background:#fff;
+             ">
+            </div>
+
+            <!-- Legende unter der Karte -->
+            <div id="map-legend" class="map-legend shadow-sm border rounded px-3 py-2 bg-white mt-2">
+                <strong class="me-2">Legende:</strong>
+
+                <span class="map-legend__item">
+                <span class="map-legend__swatch map-legend__swatch--REPORTED"></span>
+                <span>REPORTED – gemeldet (blau)</span>
+            </span>
+
+                <span class="map-legend__item">
+                <span class="map-legend__swatch map-legend__swatch--SCHEDULED"></span>
+                <span>SCHEDULED – Bergung geplant (gelb)</span>
+            </span>
+
+                <span class="map-legend__item">
+                <span class="map-legend__swatch map-legend__swatch--RECOVERED"></span>
+                <span>RECOVERED – geborgen (grün)</span>
+            </span>
+
+                <span class="map-legend__item">
+                <span class="map-legend__swatch map-legend__swatch--CANCELLED"></span>
+                <span>CANCELLED – abgebrochen (rot)</span>
+            </span>
+            </div>
         </div>
     </main>
 </div>
@@ -381,6 +497,7 @@
 <script type="module" src="/js/auth-store.js"></script>
 <script type="module" src="/js/auth.js"></script>
 <script type="module" src="/js/login.js"></script>
+<script type="module" src="/js/schedule-modal.js"></script>
 <script type="module" src="/js/user-menu.js"></script>
 </body>
 </html>

@@ -75,3 +75,52 @@ body {
 .gn-status--RECOVERED { color: #198754; }   /* grün */
 .gn-status--CONFIRMED { color: #0d6efd; }   /* blau */
 .gn-status--CANCELLED { color: #6c757d; }   /* grau */
+
+/* Auswahldarstellung für Geisternetze im Bergungs-Modal */
+.gn-card--selectable {
+  cursor: pointer;
+}
+
+.gn-card--selected {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.15rem rgba(13,110,253,.25);
+}
+
+/* --- Map-Legende unter der Karte --- */
+.map-legend {
+  font-size: 0.875rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem 1rem;
+}
+
+.map-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+}
+
+.map-legend__swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+/* Farben passend zu den Marker-Farben */
+.map-legend__swatch--REPORTED {
+  background-color: #0d6efd; /* blau */
+}
+
+.map-legend__swatch--SCHEDULED {
+  background-color: #ffc107; /* gelb */
+}
+
+.map-legend__swatch--RECOVERED {
+  background-color: #198754; /* grün */
+}
+
+.map-legend__swatch--CANCELLED {
+  background-color: #dc3545; /* rot */
+}
