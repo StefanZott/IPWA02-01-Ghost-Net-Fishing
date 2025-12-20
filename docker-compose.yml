@@ -14,7 +14,7 @@ services:
     volumes:
       - pg_ghostnet_data:/var/lib/postgresql/data
       # Optional: place .sql files into ./initdb to auto-run once on first start
-      - ./initdb:/docker-entrypoint-initdb.d
+      - ./initdb/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
 
 volumes:
   pg_ghostnet_data:

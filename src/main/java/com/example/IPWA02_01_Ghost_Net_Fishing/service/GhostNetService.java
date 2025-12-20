@@ -1,17 +1,17 @@
 package com.example.IPWA02_01_Ghost_Net_Fishing.service;
 
 import com.example.IPWA02_01_Ghost_Net_Fishing.dto.GhostNetRequest;
-import com.example.IPWA02_01_Ghost_Net_Fishing.dto.GhostNetResponse;
 import com.example.IPWA02_01_Ghost_Net_Fishing.dto.UpdateGhostNetStatusRequest;
 import com.example.IPWA02_01_Ghost_Net_Fishing.model.GhostNet;
 import com.example.IPWA02_01_Ghost_Net_Fishing.model.GhostNetStatus;
+import com.example.IPWA02_01_Ghost_Net_Fishing.model.User;
 import com.example.IPWA02_01_Ghost_Net_Fishing.repository.GhostNetRepository;
+import com.example.IPWA02_01_Ghost_Net_Fishing.repository.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
 
 import java.util.List;
 
@@ -28,15 +28,17 @@ import java.util.List;
 @Service
 public class GhostNetService {
 
-    private final GhostNetRepository repository;
+    private final GhostNetRepository ghostNetRepository;
+    private final UserRepository userRepository;
 
     /**
      * Konstruktor-Injektion des Repositories.
      *
-     * @param repository JPA-Repository für {@link GhostNet}
+     * @param ghostNetRepository JPA-Repository für {@link GhostNet}
      */
-    public GhostNetService(GhostNetRepository repository) {
-        this.repository = repository;
+    public GhostNetService(GhostNetRepository ghostNetRepository, UserRepository userRepository) {
+        this.ghostNetRepository = ghostNetRepository;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -45,7 +47,7 @@ public class GhostNetService {
      * @return Liste aller {@link GhostNet}-Entities
      */
     public List<GhostNet> getAllGhostNets() {
-        return repository.findAll();
+        return ghostNetRepository.findAll();
     }
 
     /**
@@ -92,6 +94,8 @@ public class GhostNetService {
         ghostNet.setLongitude(request.getLongitude());
         ghostNet.setSize(request.getDepth_meters()); // DTO-Feldname "depth_meters" -> Entity-Feld "size"
         ghostNet.setStatus(GhostNetStatus.REPORTED); // Client-Status ignorieren
+        ghostNet.setReportedAt(Instant.now());
+        ghostNet.setCreatedAt(Instant.now());
 
         // 3) Reporter NUR serverseitig setzen (niemals aus Request!)
         if (currentUserId != null) {
@@ -106,7 +110,7 @@ public class GhostNetService {
 
         // 4) Persistieren
         try {
-            return repository.save(ghostNet);
+            return ghostNetRepository.save(ghostNet);
         } catch (DataIntegrityViolationException ex) {
             // Typische Ursachen:
             // - NOT NULL-Verletzung bei reported_by_user_id
@@ -140,22 +144,78 @@ public class GhostNetService {
     }
 
     /**
-     * Aktualisiert nur den Status eines vorhandenen Geisternetzes.
+     * Aktualisiert Status und Planungsdaten eines Geisternetzes.
+     * <p>
+     * Fachlogik:
+     * <ul>
+     *   <li>Setzt immer den neuen Status.</li>
+     *   <li>Beim Wechsel auf {@link GhostNetStatus#SCHEDULED} werden
+     *       {@code scheduledAt} und {@code scheduledBy} gesetzt.</li>
+     *   <li>Bei anderen Status bleiben diese Felder unverändert (Audit).</li>
+     * </ul>
      *
-     * @param id        ID des Geisternetzes
-     * @param newStatus Neuer Status
+     * @param id      ID des Geisternetzes
+     * @param request Request mit neuem Status und optionaler User-ID
      * @return aktualisiertes Geisternetz
-     * @throws IllegalArgumentException wenn das Geisternetz nicht gefunden wird
+     * @throws IllegalArgumentException wenn Request oder Status ungültig sind
      */
-    public GhostNet updateStatus(Long id, GhostNetStatus newStatus) {
-        if (newStatus == null) {
+    public GhostNet updateStatus(Long id, UpdateGhostNetStatusRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Request darf nicht null sein.");
+        }
+        if (request.getStatus() == null) {
             throw new IllegalArgumentException("Neuer Status darf nicht null sein.");
         }
 
-        GhostNet net = repository.findById(id)
+        GhostNetStatus newStatus = request.getStatus();
+
+        GhostNet net = ghostNetRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("GhostNet nicht gefunden: " + id));
 
+        GhostNetStatus oldStatus = net.getStatus();
         net.setStatus(newStatus);
-        return repository.save(net);
+        net.setUpdatedAt(Instant.now());
+
+        // Wenn auf SCHEDULED umgestellt wird → scheduledAt & scheduledBy setzen
+        if (newStatus == GhostNetStatus.SCHEDULED) {
+            Long scheduledByUserId = request.getScheduledByUserId();
+
+            // scheduled_by_user_id nur setzen, wenn etwas übergeben wurde
+            if (scheduledByUserId != null) {
+                // Deine Entity hat (laut Controller) getScheduledBy()/setScheduledBy(Long)
+                net.setScheduledBy(scheduledByUserId);
+            }
+
+            // Timestamp nur dann setzen, wenn er noch nicht gesetzt war
+            if (oldStatus != GhostNetStatus.SCHEDULED || net.getScheduledAt() == null) {
+                net.setScheduledAt(Instant.now());
+            }
+        }
+
+        if (newStatus == GhostNetStatus.RECOVERED) {
+            Long recoveredByUserId = request.getRecoveredByUserId();
+
+            if (recoveredByUserId != null) {
+                net.setRecoveredBy(recoveredByUserId);
+            }
+
+            if (oldStatus != GhostNetStatus.RECOVERED || net.getRecoveredAt() == null) {
+                net.setRecoveredAt(Instant.now());
+            }
+        }
+
+        if (newStatus == GhostNetStatus.CANCELLED) {
+            Long cancelledByUserId = request.getCancelledByUserId();
+
+            if (cancelledByUserId != null) {
+                net.setCanceldBy(cancelledByUserId);
+            }
+
+            if (oldStatus != GhostNetStatus.CANCELLED || net.getCanceldAt() == null) {
+                net.setCanceldAt(Instant.now());
+            }
+        }
+
+        return ghostNetRepository.save(net);
     }
 }

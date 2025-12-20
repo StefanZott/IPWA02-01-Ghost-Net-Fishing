@@ -3,6 +3,8 @@
  * Listet Ghost Nets in der Sidebar als kompakte Cards:
  *  Zeile 1: "#<id> <STATUS>"
  *  Zeile 2: "<lat>, <lng>"
+ *  Zeile 3 (optional): "Übernommen von User-ID #<id>"
+ *
  * Klick fokussiert die Map (map.js), sonst keine Auto-Zooms.
  *
  * Erweiterungen:
@@ -17,6 +19,7 @@
  * @property {string=} name
  * @property {number=} size
  * @property {string=} updatedAt
+ * @property {number|null|undefined} scheduledByUserId - ID der bergenden Person (optional)
  */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -76,6 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
   /**
    * Escaping für einfache Text-Outputs.
    * @param {string} s
+   * @returns {string}
    */
   function escapeHtml(s) {
     return s
@@ -84,6 +88,28 @@ document.addEventListener("DOMContentLoaded", () => {
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#39;");
+  }
+
+  /**
+   * Erzeugt den HTML-Block für die optionale Zeile mit der bergenden Person.
+   * Es wird nur angezeigt, wenn eine User-ID gesetzt ist.
+   *
+   * @param {GhostNet} net
+   * @returns {string} HTML-Fragment (oder leerer String)
+   */
+  function renderScheduledByRow(net) {
+    if (net.scheduledByUserId == null) {
+      return "";
+    }
+
+    // Optional: nur bei SCHEDULED/RECOVERED anzeigen
+    const status = (net.status || "REPORTED").toUpperCase();
+    if (status !== "SCHEDULED" && status !== "RECOVERED") {
+      return "";
+    }
+
+    const idText = escapeHtml(String(net.scheduledByUserId));
+    return `<div class="gn-row3 small text-muted">Übernommen von User-ID #${idText}</div>`;
   }
 
   /**
@@ -107,6 +133,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const li = document.createElement("li");
       li.dataset.id = String(net.id);
 
+      const scheduledRowHtml = renderScheduledByRow(net);
+
       li.innerHTML = `
         <article class="gn-card" role="button" tabindex="0" aria-label="Geisternetz #${escapeHtml(String(net.id))}">
           <div class="gn-row1">
@@ -114,6 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="${statusClass(statusTxt)}" style="margin-left:.35rem">${escapeHtml(statusTxt)}</span>
           </div>
           <div class="gn-row2">${latTxt}, ${lngTxt}</div>
+          ${scheduledRowHtml}
         </article>
       `;
 
@@ -132,6 +161,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /**
    * Filtert anhand der aktuellen Query nach name/status (Case-Insensitive).
+   * Optional könnte hier auch nach ID oder scheduledByUserId gefiltert werden.
+   *
    * @param {GhostNet[]} nets
    * @param {string} query
    * @returns {GhostNet[]}
@@ -143,7 +174,16 @@ document.addEventListener("DOMContentLoaded", () => {
     return nets.filter((n) => {
       const name   = (n.name ?? "").toLowerCase();
       const status = (n.status ?? "").toLowerCase();
-      return name.includes(q) || status.includes(q);
+      // Optional: ID/Übernehmer in Textsuche einbeziehen
+      const idText = String(n.id ?? "").toLowerCase();
+      const scheduledText = n.scheduledByUserId != null ? String(n.scheduledByUserId).toLowerCase() : "";
+
+      return (
+        name.includes(q) ||
+        status.includes(q) ||
+        idText.includes(q) ||
+        scheduledText.includes(q)
+      );
     });
   }
 
@@ -166,9 +206,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initial laden
   reloadSidebar();
 
-  // Live-Filter Name/Status
+  // Live-Filter
   if (searchEl) {
-    searchEl.addEventListener("input", (ev) => {
+    searchEl.addEventListener("input", () => {
       currentQuery = String(searchEl.value ?? "");
       const filtered = applyFilter(allNets, currentQuery);
       render(filtered);
@@ -177,7 +217,8 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /**
- * Karte fokussieren (Map kommt aus map.js via window.__ghostNetMap__)
+ * Karte fokussieren (Map kommt aus map.js via window.__ghostNetMap__).
+ *
  * @param {number} lat
  * @param {number} lng
  * @param {number} [zoom=13]

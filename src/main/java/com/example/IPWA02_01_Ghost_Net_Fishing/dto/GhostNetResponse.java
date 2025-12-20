@@ -9,13 +9,29 @@ public class GhostNetResponse {
     private Double longitude;
     private Double size;
     private GhostNetStatus status;
+    private Long scheduledByUserId;
 
+    /**
+     * Minimaler Standard-Konstruktor (abwärtskompatibel).
+     */
     public GhostNetResponse(Long id, Double latitude, Double longitude, Double size, GhostNetStatus status) {
         this.id = id;
         this.latitude = latitude;
         this.longitude = longitude;
         this.size = size;
         this.status = status;
+    }
+
+    /**
+     * Vollständiger Konstruktor inklusive bergender Person.
+     */
+    public GhostNetResponse(Long id, Double latitude, Double longitude, Double size, GhostNetStatus status, Long scheduledByUserId) {
+        this.id = id;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.size = size;
+        this.status = status;
+        this.scheduledByUserId = scheduledByUserId;
     }
 
     public Long getId() {
@@ -57,4 +73,13 @@ public class GhostNetResponse {
     public void setStatus(GhostNetStatus status) {
         this.status = status;
     }
+
+    public Long getScheduledByUserId() {
+        return scheduledByUserId;
+    }
+
+    public void setScheduledByUserId(Long scheduledByUserId) {
+        this.scheduledByUserId = scheduledByUserId;
+    }
+
 }

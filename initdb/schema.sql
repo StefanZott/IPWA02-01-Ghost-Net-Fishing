@@ -23,35 +23,13 @@ CREATE TABLE users (
   email           VARCHAR(255) NOT NULL UNIQUE,
   password_hash   VARCHAR(255) NOT NULL,
   phone_number    VARCHAR(50),
-  role            BIGINT,
+  role            VARCHAR(50),
   enabled         BOOLEAN NOT NULL DEFAULT TRUE,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_users_enabled ON users (enabled);
-
--- ---------------------------
--- Tabelle: roles
--- ---------------------------
-CREATE TABLE roles (
-  id          BIGSERIAL PRIMARY KEY,
-  name        VARCHAR(100) NOT NULL,
-  description VARCHAR(255),
-  CONSTRAINT uq_roles_name UNIQUE (name)
-);
-
--- ---------------------------
--- Tabelle: user_roles (n:m)
--- ---------------------------
-CREATE TABLE user_roles (
-  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  role_id BIGINT NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-  PRIMARY KEY (user_id, role_id)
-);
-
-CREATE INDEX idx_user_roles_user  ON user_roles (user_id);
-CREATE INDEX idx_user_roles_role  ON user_roles (role_id);
 
 -- ---------------------------
 -- Tabelle: ghost_nets
@@ -63,12 +41,16 @@ CREATE TABLE ghost_nets (
   status               VARCHAR(30) NOT NULL DEFAULT 'REPORTED',
   CONSTRAINT chk_ghost_nets_status
     CHECK (status IN ('REPORTED','CONFIRMED','SCHEDULED','RECOVERED','CANCELLED')),
-  reported_by_user_id  BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  reported_by_user_id  BIGINT REFERENCES users(id) ON DELETE SET NULL,
   recovered_by_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
-  reported_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  scheduled_by_user_id BIGINT NULL REFERENCES users(id),
+  canceld_by_user_id   BIGINT NULL REFERENCES users(id),
+  reported_at          TIMESTAMPTZ,
   recovered_at         TIMESTAMPTZ,
-  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  scheduled_at         TIMESTAMPTZ,
+  canceld_at           TIMESTAMPTZ,
+  created_at           TIMESTAMPTZ,
+  updated_at           TIMESTAMPTZ,
   size                 NUMERIC(10,2)
 );
 

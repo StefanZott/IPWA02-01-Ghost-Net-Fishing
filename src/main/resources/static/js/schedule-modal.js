@@ -8,7 +8,7 @@
  *  - Schickt den neuen Status per PATCH an /api/ghostnets/{id}/status
  *
  * Abhängigkeiten:
- *  - Bootstrap (Modal)
+ *  - Bootstrap (Modal, global "bootstrap")
  *  - Backend-Endpoint: GET /api/ghostnets, PATCH /api/ghostnets/{id}/status
  */
 
@@ -20,6 +20,7 @@
  * @property {number} longitude
  * @property {number|null} size
  * @property {string} status
+ * @property {number|null|undefined} scheduledByUserId - ID der bergenden Person (optional)
  */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -28,17 +29,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const listEl   = document.getElementById("schedule-gn-list");
   const selectedBox = document.getElementById("schedule-selected-net");
   const hiddenId = /** @type {HTMLInputElement|null} */(
-      document.getElementById("schedule-net-id")
+    document.getElementById("schedule-net-id")
   );
   const statusSelect = /** @type {HTMLSelectElement|null} */(
-      document.getElementById("schedule-status")
+    document.getElementById("schedule-status")
   );
   const formEl   = /** @type {HTMLFormElement|null} */(
-      document.getElementById("schedule-form")
+    document.getElementById("schedule-form")
   );
   const errorBox = document.getElementById("schedule-error");
   const submitBtn = /** @type {HTMLButtonElement|null} */(
-      document.getElementById("schedule-submit")
+    document.getElementById("schedule-submit")
   );
 
   if (!menuItem || !modalEl || !listEl || !selectedBox || !hiddenId ||
@@ -47,12 +48,40 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  let modal;
+  try {
+    // Bootstrap-Modal-Instanz holen
+    modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  } catch (e) {
+    console.error("[schedule-modal] Bootstrap Modal nicht verfügbar:", e);
+    return;
+  }
 
   /** @type {GhostNet[]} */
   let nets = [];
   /** @type {GhostNet|null} */
   let selectedNet = null;
+
+  /**
+   * Liefert den aktuell eingeloggten Benutzer aus sessionStorage["auth.user"].
+   * Erwartete Struktur (aus LoginResponse):
+   * { userId: number, username: string, ... }
+   *
+   * @returns {{ userId: number } | null}
+   */
+  function getCurrentUser() {
+    try {
+      const raw = sessionStorage.getItem("auth.user");
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (obj && typeof obj.id === "number") {
+        return obj;
+      }
+    } catch (e) {
+      console.warn("[schedule-modal] Konnte auth.user nicht lesen:", e);
+    }
+    return null;
+  }
 
   /**
    * Lädt alle Geisternetze vom Backend.
@@ -131,7 +160,6 @@ document.addEventListener("DOMContentLoaded", () => {
       listEl.appendChild(li);
     });
 
-    // Selektion optisch aktualisieren
     updateSelectionHighlight();
   }
 
@@ -151,6 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /**
    * Wählt ein Geisternetz anhand der ID aus und aktualisiert Detailbereich und Form.
+   *
    * @param {number} id
    */
   function selectNet(id) {
@@ -174,18 +203,22 @@ document.addEventListener("DOMContentLoaded", () => {
       ? `${selectedNet.size} m²`
       : "unbekannt";
 
+    const scheduledInfo = selectedNet.scheduledByUserId != null
+      ? `<br>Bergung durch User-ID: ${selectedNet.scheduledByUserId}`
+      : "";
+
     selectedBox.innerHTML = `
       <div><strong>Geisternetz #${selectedNet.id}</strong></div>
       <div class="text-muted small">
         Status: ${selectedNet.status}<br>
         Koord.: ${lat}, ${lng}<br>
         Größe: ${size}
+        ${scheduledInfo}
       </div>
     `;
     hiddenId.value = String(selectedNet.id);
     submitBtn.disabled = false;
 
-    // Status-Dropdown optional auf aktuellen Status setzen
     const currentStatus = (selectedNet.status || "").toUpperCase();
     if ([...statusSelect.options].some(o => o.value === currentStatus)) {
       statusSelect.value = currentStatus;
@@ -198,15 +231,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /**
    * Schickt den neuen Status an das Backend.
-   * @param {number} id
-   * @param {string} newStatus
+   * Setzt "scheduledByUserId" im Request-Body für SCHEDULED.
+   *
+   * @param {number} id        ID des Geisternetzes
+   * @param {string} newStatus Neuer Ziel-Status
    * @returns {Promise<GhostNet>}
    */
   async function sendStatusUpdate(id, newStatus) {
+    /** @type {Record<string,string>} */
+    const headers = { "Content-Type": "application/json" };
+
+    const currentUser = getCurrentUser();
+
+    const scheduledByUserId =
+      newStatus === "SCHEDULED" && currentUser && typeof currentUser.id === "number"
+        ? currentUser.id
+        : null;
+
+    const recoveredByUserId =
+      newStatus === "RECOVERED" && currentUser && typeof currentUser.id === "number"
+        ? currentUser.id
+        : null;
+
+    const cancelledByUserId =
+      newStatus === "CANCELLED" && currentUser && typeof currentUser.id === "number"
+        ? currentUser.id
+        : null;
+
+    const body = {
+      status: newStatus,
+      scheduledByUserId,
+      recoveredByUserId,
+      cancelledByUserId
+    };
+
     const res = await fetch(`/api/ghostnets/${id}/status`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus })
+      headers,
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
@@ -230,10 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       nets = await fetchGhostNets();
-
-      // LISTE NACH ID SORTIEREN (aufsteigend)
       nets.sort((a, b) => Number(a.id) - Number(b.id));
-
       renderList(nets);
       modal.show();
     } catch (e) {
@@ -245,7 +304,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Klick auf "Bergung ankündigen" im User-Menü → Modal öffnen
+  // Klick auf "Geisternetz bearbeiten" im User-Menü → Modal öffnen
   menuItem.addEventListener("click", (ev) => {
     ev.preventDefault();
     openModal();
@@ -287,10 +346,9 @@ document.addEventListener("DOMContentLoaded", () => {
       renderList(nets);
       selectNet(updated.id);
 
-      // Optional: Sidebar/Map informieren – simples Reload für Prototyp
+      // Prototyp: komplette Seite neu laden, damit Sidebar/Map updaten
       modal.hide();
       window.location.reload();
-
     } catch (e) {
       console.error("[schedule-modal] Status-Update fehlgeschlagen:", e);
       showError(e.message || "Status-Update fehlgeschlagen.");

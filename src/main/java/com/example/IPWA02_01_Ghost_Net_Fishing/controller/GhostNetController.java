@@ -70,25 +70,29 @@ public class GhostNetController {
     }
 
     /**
-     * Aktualisiert den Status eines vorhandenen Geisternetzes.
+     * Aktualisiert den Status eines Geisternetzes.
+     * <p>
+     * Erwartet im Request den Ziel-Status sowie optional die ID des Benutzers,
+     * der die Bergung terminiert hat.
      *
      * @param id      ID des Geisternetzes
-     * @param request Request mit neuem Status
-     * @return aktualisierte GhostNetResponse
+     * @param request Request mit neuem Status und optionaler scheduledByUserId
+     * @return aktualisierte GhostNet-Response
      */
     @PatchMapping("/{id}/status")
     public ResponseEntity<GhostNetResponse> updateStatus(
             @PathVariable Long id,
             @RequestBody UpdateGhostNetStatusRequest request) {
 
-        GhostNet updated = service.updateStatus(id, request.getStatus());
+        GhostNet updated = service.updateStatus(id, request);
 
         GhostNetResponse response = new GhostNetResponse(
                 updated.getId(),
                 updated.getLatitude(),
                 updated.getLongitude(),
                 updated.getSize(),
-                updated.getStatus()
+                updated.getStatus(),
+                updated.getScheduledBy()
         );
 
         return ResponseEntity.ok(response);
